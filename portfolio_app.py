@@ -26,10 +26,30 @@ def save_holdings(h):
         json.dump(h, f, indent=2)
 
 def load_history():
-    if os.path.exists(HISTORY_FILE):
+    """Load history JSON; return {} on any parse error so the dashboard never crashes."""
+    if not os.path.exists(HISTORY_FILE):
+        return {}
+    try:
         with open(HISTORY_FILE) as f:
-            return json.load(f)
-    return {}
+            raw = json.load(f)
+        # Normalise pnl_pct: old data stored it as a decimal fraction (0.0772).
+        # New fetch_eod.py stores plain percent (-9.41).  If |value| < 2 for most
+        # stocks we are almost certainly looking at the old fractional format.
+        for date_key, day in raw.items():
+            values = [v.get("pnl_pct") for v in day.values()
+                      if isinstance(v, dict) and v.get("pnl_pct") is not None]
+            if values and all(abs(v) < 2 for v in values):
+                # Looks like decimal fractions — multiply by 100
+                for stock_data in day.values():
+                    if isinstance(stock_data, dict) and stock_data.get("pnl_pct") is not None:
+                        stock_data["pnl_pct"] = round(stock_data["pnl_pct"] * 100, 4)
+        return raw
+    except Exception:
+        # Corrupted file — back it up and start fresh
+        import shutil, time
+        backup = HISTORY_FILE + f".bak.{int(time.time())}"
+        shutil.copy2(HISTORY_FILE, backup)
+        return {}
 
 # ── Dashboard route ───────────────────────────────────────────────────────────
 @app.route("/")
