@@ -239,6 +239,12 @@ HTML = """<!DOCTYPE html>
 
   /* ── Chart container — explicit height so maintainAspectRatio:false works ── */
   .chart-wrap{position:relative;height:340px}
+
+  /* ── Right-align numeric cells (design system: components-holdings-table.html) ── */
+  .r{text-align:right}
+
+  /* ── Modal footer (design system: components-modals.html) ── */
+  .modal-footer{background:#f8f9fa;border-top:1px solid #e8e8e8}
 </style>
 </head>
 <body>
@@ -261,7 +267,7 @@ HTML = """<!DOCTYPE html>
     <div class="row align-items-center">
       <div class="col-auto">
         <div class="label">Portfolio Net P&amp;L (vs Avg Buy)</div>
-        <div class="amount {% if total_pnl >= 0 %}text-success{% else %}text-danger{% endif %}">
+        <div class="amount" style="color:#C6EFCE">
           {{ '+' if total_pnl >= 0 else '' }}₹{{ '{:,.0f}'.format(total_pnl) }}
         </div>
       </div>
@@ -280,16 +286,16 @@ HTML = """<!DOCTYPE html>
         <div class="p-0">
           <table class="table table-sm mb-0 mover-card green-tbl">
             <thead><tr>
-              <th>Stock</th><th>Prev ₹</th><th>Today ₹</th><th>Chg ₹</th><th>Chg %</th>
+              <th>Stock</th><th class="r">Prev ₹</th><th class="r">Today ₹</th><th class="r">Chg ₹</th><th class="r">Chg %</th>
             </tr></thead>
             <tbody>
               {% for r in gainers %}
               <tr class="pos-bg">
                 <td class="fw-bold">{{ r.stock }}</td>
-                <td>{{ '₹{:,.2f}'.format(r.prev_close) if r.prev_close else '—' }}</td>
-                <td>{{ '₹{:,.2f}'.format(r.close) if r.close else 'N/A' }}</td>
-                <td>{{ ('+₹' if r.day_chg_rs and r.day_chg_rs >= 0 else '₹') + '{:,.2f}'.format(r.day_chg_rs) if r.day_chg_rs is not none else '—' }}</td>
-                <td class="pos">{{ '+{:.2f}%'.format(r.day_pct) if r.day_pct >= 0 else '{:.2f}%'.format(r.day_pct) }}</td>
+                <td class="r">{{ '₹{:,.2f}'.format(r.prev_close) if r.prev_close else '—' }}</td>
+                <td class="r">{{ '₹{:,.2f}'.format(r.close) if r.close else 'N/A' }}</td>
+                <td class="r">{{ ('+₹' if r.day_chg_rs and r.day_chg_rs >= 0 else '₹') + '{:,.2f}'.format(r.day_chg_rs) if r.day_chg_rs is not none else '—' }}</td>
+                <td class="r pos">{{ '+{:.2f}%'.format(r.day_pct) if r.day_pct >= 0 else '{:.2f}%'.format(r.day_pct) }}</td>
               </tr>
               {% else %}
               <tr><td colspan="5" class="text-center text-muted py-3">No data yet — click Fetch Now</td></tr>
@@ -305,16 +311,16 @@ HTML = """<!DOCTYPE html>
         <div class="p-0">
           <table class="table table-sm mb-0 mover-card red-tbl">
             <thead><tr>
-              <th>Stock</th><th>Prev ₹</th><th>Today ₹</th><th>Chg ₹</th><th>Chg %</th>
+              <th>Stock</th><th class="r">Prev ₹</th><th class="r">Today ₹</th><th class="r">Chg ₹</th><th class="r">Chg %</th>
             </tr></thead>
             <tbody>
               {% for r in losers %}
               <tr class="neg-bg">
                 <td class="fw-bold">{{ r.stock }}</td>
-                <td>{{ '₹{:,.2f}'.format(r.prev_close) if r.prev_close else '—' }}</td>
-                <td>{{ '₹{:,.2f}'.format(r.close) if r.close else 'N/A' }}</td>
-                <td>{{ '₹{:,.2f}'.format(r.day_chg_rs) if r.day_chg_rs is not none else '—' }}</td>
-                <td class="neg">{{ '{:.2f}%'.format(r.day_pct) }}</td>
+                <td class="r">{{ '₹{:,.2f}'.format(r.prev_close) if r.prev_close else '—' }}</td>
+                <td class="r">{{ '₹{:,.2f}'.format(r.close) if r.close else 'N/A' }}</td>
+                <td class="r">{{ '₹{:,.2f}'.format(r.day_chg_rs) if r.day_chg_rs is not none else '—' }}</td>
+                <td class="r neg">{{ '{:.2f}%'.format(r.day_pct) }}</td>
               </tr>
               {% else %}
               <tr><td colspan="5" class="text-center text-muted py-3">No data yet — click Fetch Now</td></tr>
@@ -343,8 +349,10 @@ HTML = """<!DOCTYPE html>
       <table class="table table-hover table-sm mb-0">
         <thead>
           <tr>
-            <th>Stock</th><th>Exch</th><th>Qty</th><th>Avg Buy ₹</th>
-            <th>Close ₹</th><th>P&amp;L ₹</th><th>P&amp;L %</th><th>Day %</th><th>Actions</th>
+            <th>Stock</th><th>Exch</th>
+            <th class="r">Qty</th><th class="r">Avg ₹</th>
+            <th class="r">Close ₹</th><th class="r">P&amp;L ₹</th>
+            <th class="r">P&amp;L %</th><th class="r">Day %</th><th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -357,20 +365,20 @@ HTML = """<!DOCTYPE html>
           <tr class="{{ rc }}">
             <td class="fw-bold">{{ r.stock }}</td>
             <td><span class="badge-{{ r.exchange|lower }}">{{ r.exchange }}</span></td>
-            <td>{{ r.qty }}</td>
-            <td>₹{{ '{:,.2f}'.format(r.avg) }}</td>
-            <td>{{ '₹{:,.2f}'.format(r.close) if r.close else 'N/A' }}</td>
-            <td class="{{ 'pos' if r.pnl_rs and r.pnl_rs > 0 else ('neg' if r.pnl_rs and r.pnl_rs < 0 else '') }}">
+            <td class="r">{{ r.qty|int|string }}</td>
+            <td class="r">₹{{ '{:,.2f}'.format(r.avg) }}</td>
+            <td class="r">{{ '₹{:,.2f}'.format(r.close) if r.close else 'N/A' }}</td>
+            <td class="r {{ 'pos' if r.pnl_rs and r.pnl_rs > 0 else ('neg' if r.pnl_rs and r.pnl_rs < 0 else '') }}">
               {% if r.pnl_rs is not none %}{{ '+' if r.pnl_rs >= 0 else '' }}₹{{ '{:,.0f}'.format(r.pnl_rs) }}{% else %}N/A{% endif %}
             </td>
-            <td class="{{ 'pos' if r.pnl_pct and r.pnl_pct > 0 else ('neg' if r.pnl_pct and r.pnl_pct < 0 else '') }}">
+            <td class="r {{ 'pos' if r.pnl_pct and r.pnl_pct > 0 else ('neg' if r.pnl_pct and r.pnl_pct < 0 else '') }}">
               {% if r.pnl_pct is not none %}{{ '+' if r.pnl_pct >= 0 else '' }}{{ '{:.2f}'.format(r.pnl_pct) }}%{% else %}N/A{% endif %}
             </td>
-            <td class="{{ 'pos' if r.day_chg and r.day_chg > 0 else ('neg' if r.day_chg and r.day_chg < 0 else '') }}">
+            <td class="r {{ 'pos' if r.day_chg and r.day_chg > 0 else ('neg' if r.day_chg and r.day_chg < 0 else '') }}">
               {% if r.day_chg is not none %}{{ '+' if r.day_chg >= 0 else '' }}{{ '{:.2f}'.format(r.day_chg) }}%{% else %}—{% endif %}
             </td>
             <td style="white-space:nowrap">
-              <button class="btn btn-sm btn-outline-primary py-0 px-2"
+              <button class="btn btn-sm btn-outline-primary py-0 px-2 me-1"
                 onclick="openEdit('{{ r.stock }}','{{ r.qty }}','{{ r.avg }}','{{ r.yahoo }}')">
                 Edit
               </button>
@@ -384,7 +392,7 @@ HTML = """<!DOCTYPE html>
           {% endfor %}
           <tr class="total-row">
             <td colspan="5">PORTFOLIO TOTAL</td>
-            <td colspan="2" class="{{ 'text-success' if total_pnl >= 0 else 'text-danger' }}">
+            <td class="r" colspan="2">
               {{ '+' if total_pnl >= 0 else '' }}₹{{ '{:,.0f}'.format(total_pnl) }}
             </td>
             <td colspan="2"></td>
