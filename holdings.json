@@ -1,0 +1,147 @@
+{
+  "ASHOKLEY": {
+    "yahoo": "ASHOKLEY.BO",
+    "avg": 169.222194,
+    "qty": 1185
+  },
+  "BAJFINANCE": {
+    "yahoo": "BAJFINANCE.BO",
+    "avg": 854.822666,
+    "qty": 75
+  },
+  "BANKINDIA": {
+    "yahoo": "BANKINDIA.BO",
+    "avg": 152.11763,
+    "qty": 1000
+  },
+  "CANBK": {
+    "yahoo": "CANBK.NS",
+    "avg": 103.087662,
+    "qty": 1848
+  },
+  "CGPOWER": {
+    "yahoo": "CGPOWER.NS",
+    "avg": 683.578125,
+    "qty": 64
+  },
+  "CUB": {
+    "yahoo": "CUB.BO",
+    "avg": 218.15367,
+    "qty": 1700
+  },
+  "EICHERMOT": {
+    "yahoo": "EICHERMOT.BO",
+    "avg": 7249.2,
+    "qty": 5
+  },
+  "EIDPARRY": {
+    "yahoo": "EIDPARRY.NS",
+    "avg": 916.242073,
+    "qty": 82
+  },
+  "GOLDBEES": {
+    "yahoo": "GOLDBEES.NS",
+    "avg": 124.537859,
+    "qty": 3700
+  },
+  "IDBI": {
+    "yahoo": "IDBI.NS",
+    "avg": 80.35,
+    "qty": 1
+  },
+  "INDIANB": {
+    "yahoo": "INDIANB.NS",
+    "avg": 533.157411,
+    "qty": 479
+  },
+  "IOB": {
+    "yahoo": "IOB.BO",
+    "avg": 35.065902,
+    "qty": 5000
+  },
+  "KARURVYSYA": {
+    "yahoo": "KARURVYSYA.NS",
+    "avg": 186.027249,
+    "qty": 1923
+  },
+  "LICI": {
+    "yahoo": "LICI.NS",
+    "avg": 769.745161,
+    "qty": 62
+  },
+  "M&M": {
+    "yahoo": "M%26M.NS",
+    "avg": 2254.927872,
+    "qty": 235
+  },
+  "MANAPPURAM": {
+    "yahoo": "MANAPPURAM.BO",
+    "avg": 171.6,
+    "qty": 600
+  },
+  "MAXHEALTH": {
+    "yahoo": "MAXHEALTH.NS",
+    "avg": 846.628571,
+    "qty": 70
+  },
+  "NH": {
+    "yahoo": "NH.BO",
+    "avg": 1827.066666,
+    "qty": 3
+  },
+  "PTC": {
+    "yahoo": "PTC.NS",
+    "avg": 171.38793,
+    "qty": 3000
+  },
+  "SBIN": {
+    "yahoo": "SBIN.NS",
+    "avg": 736.2958333,
+    "qty": 48
+  },
+  "SILVERBEES": {
+    "yahoo": "SILVERBEES.NS",
+    "avg": 222.5,
+    "qty": 100
+  },
+  "SILVERCASE": {
+    "yahoo": "SILVERCASE.NS",
+    "avg": 24.212601,
+    "qty": 31000
+  },
+  "TMCV": {
+    "yahoo": "TMCV.BO",
+    "avg": 248.708608,
+    "qty": 500
+  },
+  "TMPV": {
+    "yahoo": "TMPV.BO",
+    "avg": 544.815814,
+    "qty": 604
+  },
+  "TVSMOTOR": {
+    "yahoo": "TVSMOTOR.NS",
+    "avg": 2014.697727,
+    "qty": 220
+  },
+  "VBL": {
+    "yahoo": "VBL.NS",
+    "avg": 444.721757,
+    "qty": 239
+  },
+  "VEDL": {
+    "yahoo": "VEDL.NS",
+    "avg": 282.093243,
+    "qty": 37
+  },
+  "YATHARTH": {
+    "yahoo": "YATHARTH.NS",
+    "avg": 524.511049,
+    "qty": 362
+  },
+  "BEL": {
+    "yahoo": "BEL.NS",
+    "avg": 420.8,
+    "qty": 50
+  }
+}

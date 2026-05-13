@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.selva.portfolio.eod</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Library/Frameworks/Python.framework/Versions/3.14/bin/python3</string>
+        <string>/Users/selva/Downloads/Portfolio_Tracker/fetch_eod.py</string>
+    </array>
+
+    <!-- Run at 3:35 PM every weekday (Mon=1 ... Fri=5) -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>15</integer>
+        <key>Minute</key>
+        <integer>35</integer>
+        <key>Weekday</key>
+        <!-- 1–5 = Mon–Fri; launchd doesn't support ranges in one dict,
+             so we use an array of dicts below instead -->
+    </dict>
+
+    <!-- Override with an array for Mon–Fri -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>35</integer><key>Weekday</key><integer>1</integer></dict>
+        <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>35</integer><key>Weekday</key><integer>2</integer></dict>
+        <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>35</integer><key>Weekday</key><integer>3</integer></dict>
+        <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>35</integer><key>Weekday</key><integer>4</integer></dict>
+        <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>35</integer><key>Weekday</key><integer>5</integer></dict>
+    </array>
+
+    <key>StandardOutPath</key>
+    <string>/Users/selva/Downloads/Portfolio_Tracker/portfolio_log.txt</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/selva/Downloads/Portfolio_Tracker/portfolio_log.txt</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>
