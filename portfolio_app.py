@@ -174,43 +174,71 @@ HTML = """<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Portfolio Tracker</title>
+<!-- Inter variable font (brand typeface per design system) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 <style>
-  body{background:#f0f2f5;font-family:'Segoe UI',Arial,sans-serif;font-size:0.88rem}
+  /* ── Brand typeface ── */
+  body{background:#f0f2f5;font-family:'Inter','Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;
+       font-size:0.88rem;font-feature-settings:'cv11','ss01'}
+
+  /* ── Topbar ── */
   .topbar{background:#1F3864;color:#fff;padding:10px 20px;display:flex;align-items:center;gap:12px;
           box-shadow:0 2px 6px rgba(0,0,0,.3)}
   .topbar .brand{font-size:1.1rem;font-weight:700;letter-spacing:.5px}
   .topbar .updated{opacity:.6;font-size:.8rem;flex:1}
+
+  /* ── Cards ── */
   .card{border:none;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.09)}
-  .card-hdr{background:#1F3864;color:#fff;font-weight:600;padding:10px 16px;border-radius:10px 10px 0 0;font-size:.9rem}
-  .card-hdr-green{background:#375623;color:#fff;font-weight:600;padding:10px 16px;border-radius:10px 10px 0 0}
-  .card-hdr-red{background:#9C0006;color:#fff;font-weight:600;padding:10px 16px;border-radius:10px 10px 0 0}
+  .card-hdr      {background:#1F3864;color:#fff;font-weight:600;padding:10px 16px;border-radius:10px 10px 0 0;font-size:.9rem}
+  .card-hdr-green{background:#567044;color:#fff;font-weight:600;padding:10px 16px;border-radius:10px 10px 0 0}
+  .card-hdr-red  {background:#e06235;color:#fff;font-weight:600;padding:10px 16px;border-radius:10px 10px 0 0}
+
+  /* ── Hero ── */
   .hero{background:linear-gradient(135deg,#1F3864 0%,#2d5ca8 100%);color:#fff;border-radius:12px;
         padding:20px 24px;box-shadow:0 3px 12px rgba(0,0,0,.2)}
   .hero .label{font-size:.78rem;opacity:.7;text-transform:uppercase;letter-spacing:.8px}
   .hero .amount{font-size:2rem;font-weight:800}
+
+  /* ── Status colors (Excel conditional-format palette) ── */
   .pos{color:#1c8c44;font-weight:600}  .neg{color:#c0392b;font-weight:600}  .neu{color:#8a6800;font-weight:600}
   .pos-bg{background:#C6EFCE!important}  .neg-bg{background:#FFC7CE!important}  .neu-bg{background:#FFEB9C!important}
+
+  /* ── Tables — tabular-nums on all cells for column alignment ── */
   table thead th{background:#1F3864;color:#fff;border:none;white-space:nowrap;font-weight:500;
-                 position:sticky;top:0;z-index:2;padding:8px 10px}
-  table td{vertical-align:middle;padding:6px 10px;border-color:#e8e8e8}
+                 position:sticky;top:0;z-index:2;padding:8px 10px;
+                 font-variant-numeric:tabular-nums;font-feature-settings:'tnum'}
+  table td{vertical-align:middle;padding:6px 10px;border-color:#e8e8e8;
+           font-variant-numeric:tabular-nums;font-feature-settings:'tnum'}
   .tbl-wrap{max-height:480px;overflow-y:auto;border-radius:0 0 10px 10px}
   .total-row td{background:#1F3864!important;color:#fff!important;font-weight:700}
+
+  /* ── Exchange chips ── */
   .badge-bse{background:#17375e;color:#fff;font-size:.7rem;padding:2px 6px;border-radius:4px}
   .badge-nse{background:#1a5276;color:#fff;font-size:.7rem;padding:2px 6px;border-radius:4px}
+
+  /* ── Buttons ── */
   .btn-navy{background:#1F3864;color:#fff;border:none}
   .btn-navy:hover{background:#16305a;color:#fff}
-  .btn-green{background:#375623;color:#fff;border:none}
-  .btn-green:hover{background:#2d4a1e;color:#fff}
-  .toast-bar{position:fixed;bottom:20px;right:20px;background:#375623;color:#fff;
+  .btn-green{background:#567044;color:#fff;border:none}
+  .btn-green:hover{background:#455a37;color:#fff}
+
+  /* ── Fetch toast ── */
+  .toast-bar{position:fixed;bottom:20px;right:20px;background:#567044;color:#fff;
              padding:12px 20px;border-radius:8px;font-weight:500;
              box-shadow:0 3px 10px rgba(0,0,0,.25);z-index:9999;display:none}
+
+  /* ── Movers sub-tables ── */
   .mover-card td{padding:7px 10px;vertical-align:middle}
   .sm-tbl thead th{background:#888;font-size:.8rem;padding:5px 8px}
-  .green-tbl thead th{background:#375623}
-  .red-tbl   thead th{background:#9C0006}
-  #pnlChart{max-height:340px}
+  .green-tbl thead th{background:#567044}
+  .red-tbl   thead th{background:#e06235}
+
+  /* ── Chart container — explicit height so maintainAspectRatio:false works ── */
+  .chart-wrap{position:relative;height:340px}
 </style>
 </head>
 <body>
@@ -302,7 +330,9 @@ HTML = """<!DOCTYPE html>
   <div class="card mb-3">
     <div class="card-hdr">📈 All Stocks — P&amp;L % by Day (vs Avg Buy Price)</div>
     <div class="card-body">
-      <canvas id="pnlChart"></canvas>
+      <div class="chart-wrap">
+        <canvas id="pnlChart"></canvas>
+      </div>
     </div>
   </div>
 
@@ -483,6 +513,7 @@ new Chart(document.getElementById('pnlChart'), {
   data: { labels: dates, datasets },
   options: {
     responsive: true,
+    maintainAspectRatio: false,
     interaction: { mode: 'index', intersect: false },
     plugins: {
       legend: {
