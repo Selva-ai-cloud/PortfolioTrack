@@ -427,7 +427,7 @@ HTML = """<!DOCTYPE html>
           </tr>
           {% endfor %}
           <tr class="total-row">
-            <td colspan="5">PORTFOLIO TOTAL</td>
+            <td colspan="6">PORTFOLIO TOTAL</td>
             <td class="r" colspan="2">
               {{ '+' if total_pnl >= 0 else '' }}₹{{ '{:,.0f}'.format(total_pnl) }}
             </td>
