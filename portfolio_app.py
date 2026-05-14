@@ -4,26 +4,32 @@ Run:  python3 portfolio_app.py
 Open: http://localhost:5050
 """
 
-import json, os, subprocess
+import json
+import os
+import subprocess
 from datetime import datetime
-from flask import Flask, render_template_string, request, redirect, url_for
 
-BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
+from flask import Flask, redirect, render_template_string, request, url_for
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 HOLDINGS_FILE = os.path.join(BASE_DIR, "holdings.json")
-HISTORY_FILE  = os.path.join(BASE_DIR, "portfolio_history.json")
-FETCH_SCRIPT  = os.path.join(BASE_DIR, "fetch_eod.py")
-PYTHON        = "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3"
+HISTORY_FILE = os.path.join(BASE_DIR, "portfolio_history.json")
+FETCH_SCRIPT = os.path.join(BASE_DIR, "fetch_eod.py")
+PYTHON = "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3"
 
 app = Flask(__name__)
+
 
 # ── Data helpers ──────────────────────────────────────────────────────────────
 def load_holdings():
     with open(HOLDINGS_FILE) as f:
         return json.load(f)
 
+
 def save_holdings(h):
     with open(HOLDINGS_FILE, "w") as f:
         json.dump(h, f, indent=2)
+
 
 def load_history():
     """Load history JSON; return {} on any parse error so the dashboard never crashes."""
@@ -36,46 +42,55 @@ def load_history():
         # New fetch_eod.py stores plain percent (-9.41).  If |value| < 2 for most
         # stocks we are almost certainly looking at the old fractional format.
         for date_key, day in raw.items():
-            values = [v.get("pnl_pct") for v in day.values()
-                      if isinstance(v, dict) and v.get("pnl_pct") is not None]
+            values = [
+                v.get("pnl_pct")
+                for v in day.values()
+                if isinstance(v, dict) and v.get("pnl_pct") is not None
+            ]
             if values and all(abs(v) < 2 for v in values):
                 # Looks like decimal fractions — multiply by 100
                 for stock_data in day.values():
-                    if isinstance(stock_data, dict) and stock_data.get("pnl_pct") is not None:
+                    if (
+                        isinstance(stock_data, dict)
+                        and stock_data.get("pnl_pct") is not None
+                    ):
                         stock_data["pnl_pct"] = round(stock_data["pnl_pct"] * 100, 4)
         return raw
     except Exception:
         # Corrupted file — back it up and start fresh
-        import shutil, time
+        import shutil
+        import time
+
         backup = HISTORY_FILE + f".bak.{int(time.time())}"
         shutil.copy2(HISTORY_FILE, backup)
         return {}
 
+
 # ── Dashboard route ───────────────────────────────────────────────────────────
 @app.route("/")
 def dashboard():
-    holdings     = load_holdings()
-    history      = load_history()
-    fetch_msg    = request.args.get("fetch_msg", "")
+    holdings = load_holdings()
+    history = load_history()
+    fetch_msg = request.args.get("fetch_msg", "")
 
-    dates        = sorted(history.keys())
-    today_data   = history[dates[-1]] if dates else {}
-    prev_data    = history[dates[-2]] if len(dates) > 1 else {}
+    dates = sorted(history.keys())
+    today_data = history[dates[-1]] if dates else {}
+    prev_data = history[dates[-2]] if len(dates) > 1 else {}
     last_updated = dates[-1] if dates else "No data yet"
 
     # Build rows
-    rows      = []
+    rows = []
     total_pnl = 0.0
     for stock in sorted(holdings.keys()):
-        info    = holdings[stock]
-        td      = today_data.get(stock, {})
-        close   = td.get("close")
-        pnl_r   = td.get("pnl_rs")
-        pnl_p   = td.get("pnl_pct")
+        info = holdings[stock]
+        td = today_data.get(stock, {})
+        close = td.get("close")
+        pnl_r = td.get("pnl_rs")
+        pnl_p = td.get("pnl_pct")
 
         prev_close = prev_data.get(stock, {}).get("close")
         if close and prev_close:
-            day_chg    = round((close - prev_close) / prev_close * 100, 2)
+            day_chg = round((close - prev_close) / prev_close * 100, 2)
             day_chg_rs = round(close - prev_close, 2)
         else:
             day_chg = day_chg_rs = None
@@ -83,19 +98,24 @@ def dashboard():
         if pnl_r:
             total_pnl += pnl_r
 
-        rows.append({
-            "stock":     stock,
-            "exchange":  "BSE" if (info.get("yahoo") or "").endswith(".BO") else "NSE",
-            "qty":       info["qty"],
-            "avg":       info["avg"],
-            "yahoo":     info.get("yahoo") or "",
-            "close":     close,
-            "pnl_rs":    pnl_r,
-            "pnl_pct":   pnl_p,
-            "day_chg":   day_chg,
-            "day_chg_rs":day_chg_rs,
-            "prev_close":prev_close,
-        })
+        rows.append(
+            {
+                "stock": stock,
+                "exchange": "BSE"
+                if (info.get("yahoo") or "").endswith(".BO")
+                else "NSE",
+                "Broker": "Zerodha",
+                "qty": info["qty"],
+                "avg": info["avg"],
+                "yahoo": info.get("yahoo") or "",
+                "close": close,
+                "pnl_rs": pnl_r,
+                "pnl_pct": pnl_p,
+                "day_chg": day_chg,
+                "day_chg_rs": day_chg_rs,
+                "prev_close": prev_close,
+            }
+        )
 
     # Top 3 gainers / losers by today's daily move
     scored = [(r["stock"], r["day_chg"]) for r in rows if r["day_chg"] is not None]
@@ -103,10 +123,14 @@ def dashboard():
         scored = [(r["stock"], r["pnl_pct"]) for r in rows if r["pnl_pct"] is not None]
 
     scored_desc = sorted(scored, key=lambda x: x[1], reverse=True)
-    gainers = [next(r for r in rows if r["stock"] == s) | {"day_pct": p}
-               for s, p in scored_desc[:3]]
-    losers  = [next(r for r in rows if r["stock"] == s) | {"day_pct": p}
-               for s, p in scored_desc[-3:][::-1]]
+    gainers = [
+        next(r for r in rows if r["stock"] == s) | {"day_pct": p}
+        for s, p in scored_desc[:3]
+    ]
+    losers = [
+        next(r for r in rows if r["stock"] == s) | {"day_pct": p}
+        for s, p in scored_desc[-3:][::-1]
+    ]
 
     # Chart data: {date: {stock: pnl_pct}}
     chart_data = {}
@@ -131,41 +155,46 @@ def dashboard():
         fetch_msg=fetch_msg,
     )
 
+
 # ── Stock CRUD ────────────────────────────────────────────────────────────────
 @app.route("/add-stock", methods=["POST"])
 def add_stock():
-    h      = load_holdings()
+    h = load_holdings()
     symbol = request.form["symbol"].strip().upper()
-    yahoo  = request.form["yahoo"].strip() or None
-    avg    = float(request.form["avg"])
-    qty    = int(request.form["qty"])
+    yahoo = request.form["yahoo"].strip() or None
+    avg = float(request.form["avg"])
+    qty = int(request.form["qty"])
     h[symbol] = {"yahoo": yahoo, "avg": avg, "qty": qty}
     save_holdings(h)
     return redirect(url_for("dashboard"))
 
+
 @app.route("/update-stock", methods=["POST"])
 def update_stock():
-    h      = load_holdings()
+    h = load_holdings()
     symbol = request.form["symbol"].strip().upper()
     if symbol in h:
-        h[symbol]["qty"]   = int(request.form["qty"])
-        h[symbol]["avg"]   = float(request.form["avg"])
+        h[symbol]["qty"] = int(request.form["qty"])
+        h[symbol]["avg"] = float(request.form["avg"])
         h[symbol]["yahoo"] = request.form["yahoo"].strip() or None
     save_holdings(h)
     return redirect(url_for("dashboard"))
 
+
 @app.route("/delete-stock", methods=["POST"])
 def delete_stock():
-    h      = load_holdings()
+    h = load_holdings()
     symbol = request.form["symbol"].strip().upper()
     h.pop(symbol, None)
     save_holdings(h)
     return redirect(url_for("dashboard"))
 
+
 @app.route("/fetch-now", methods=["POST"])
 def fetch_now():
     subprocess.Popen([PYTHON, FETCH_SCRIPT])
     return redirect(url_for("dashboard", fetch_msg="fetch_started"))
+
 
 # ── HTML template ─────────────────────────────────────────────────────────────
 HTML = """<!DOCTYPE html>
@@ -349,10 +378,16 @@ HTML = """<!DOCTYPE html>
       <table class="table table-hover table-sm mb-0">
         <thead>
           <tr>
-            <th>Stock</th><th>Exch</th>
-            <th class="r">Qty</th><th class="r">Avg ₹</th>
-            <th class="r">Close ₹</th><th class="r">P&amp;L ₹</th>
-            <th class="r">P&amp;L %</th><th class="r">Day %</th><th>Actions</th>
+            <th>Stock</th>
+            <th>Exch</th>
+            <th>Broker</th>
+            <th class="r">Qty</th>
+            <th class="r">Avg ₹</th>
+            <th class="r">Close ₹</th>
+            <th class="r">P&amp;L ₹</th>
+            <th class="r">P&amp;L %</th>
+            <th class="r">Day %</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -365,6 +400,7 @@ HTML = """<!DOCTYPE html>
           <tr class="{{ rc }}">
             <td class="fw-bold">{{ r.stock }}</td>
             <td><span class="badge-{{ r.exchange|lower }}">{{ r.exchange }}</span></td>
+            <td class="fw-bold">{{ r.Broker }}</td>
             <td class="r">{{ r.qty|int|string }}</td>
             <td class="r">₹{{ '{:,.2f}'.format(r.avg) }}</td>
             <td class="r">{{ '₹{:,.2f}'.format(r.close) if r.close else 'N/A' }}</td>
