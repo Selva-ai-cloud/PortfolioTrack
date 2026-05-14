@@ -276,6 +276,18 @@ HTML = """<!DOCTYPE html>
 
   /* ── Modal footer (design system: components-modals.html) ── */
   .modal-footer{background:#f8f9fa;border-top:1px solid #e8e8e8}
+
+  /* ── Broker filter bar ── */
+  .filter-bar{display:flex;align-items:center;gap:6px;padding:8px 16px;
+              background:#eef0f4;border-bottom:1px solid #dde2ea;flex-wrap:wrap}
+  .filter-bar .flabel{font-size:.78rem;font-weight:600;color:#555;margin-right:2px;white-space:nowrap}
+  .btn-filter{padding:3px 14px;font-size:.78rem;border-radius:20px;border:1.5px solid #1F3864;
+              background:#fff;color:#1F3864;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap}
+  .btn-filter:hover{opacity:.85}
+  .btn-filter.active{background:#1F3864;color:#fff}
+  .btn-filter.gw{border-color:#567044;color:#567044}
+  .btn-filter.gw.active{background:#567044;color:#fff}
+  .filter-bar .fcount{margin-left:auto;font-size:.75rem;color:#777}
 </style>
 </head>
 <body>
@@ -304,7 +316,7 @@ HTML = """<!DOCTYPE html>
       </div>
       <div class="col text-end opacity-75">
         <div class="label">Holdings</div>
-        <div class="fs-4 fw-bold">{{ rows|length }} stocks</div>
+        <div class="fs-4 fw-bold" id="stock-count">{{ rows|length }} stocks</div>
       </div>
     </div>
   </div>
@@ -319,7 +331,7 @@ HTML = """<!DOCTYPE html>
             <thead><tr>
               <th>Stock</th><th class="r">Prev ₹</th><th class="r">Today ₹</th><th class="r">Chg ₹</th><th class="r">Chg %</th>
             </tr></thead>
-            <tbody>
+            <tbody id="gainers-tbody">
               {% for r in gainers %}
               <tr class="pos-bg">
                 <td class="fw-bold">{{ r.stock }}</td>
@@ -344,7 +356,7 @@ HTML = """<!DOCTYPE html>
             <thead><tr>
               <th>Stock</th><th class="r">Prev ₹</th><th class="r">Today ₹</th><th class="r">Chg ₹</th><th class="r">Chg %</th>
             </tr></thead>
-            <tbody>
+            <tbody id="losers-tbody">
               {% for r in losers %}
               <tr class="neg-bg">
                 <td class="fw-bold">{{ r.stock }}</td>
@@ -374,8 +386,17 @@ HTML = """<!DOCTYPE html>
   </div>
 
   <!-- Holdings Table -->
+  {% set z_count = rows|selectattr('broker','equalto','Zerodha')|list|length %}
+  {% set g_count = rows|selectattr('broker','equalto','GoodWill')|list|length %}
   <div class="card mb-3">
     <div class="card-hdr">📋 Holdings</div>
+    <div class="filter-bar">
+      <span class="flabel">🔍 Broker:</span>
+      <button class="btn-filter active" id="f-all"      onclick="applyFilter('All')">All ({{ rows|length }})</button>
+      <button class="btn-filter"        id="f-zerodha"  onclick="applyFilter('Zerodha')">Zerodha ({{ z_count }})</button>
+      <button class="btn-filter gw"     id="f-goodwill" onclick="applyFilter('GoodWill')">GoodWill ({{ g_count }})</button>
+      <span class="fcount" id="filter-label">Showing all {{ rows|length }} stocks</span>
+    </div>
     <div class="tbl-wrap">
       <table class="table table-hover table-sm mb-0">
         <thead>
@@ -392,14 +413,14 @@ HTML = """<!DOCTYPE html>
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="holdings-tbody">
           {% for r in rows %}
           {% if r.pnl_pct is not none %}
             {% if r.pnl_pct > 0.5 %}{% set rc = 'pos-bg' %}
             {% elif r.pnl_pct < -0.5 %}{% set rc = 'neg-bg' %}
             {% else %}{% set rc = 'neu-bg' %}{% endif %}
           {% else %}{% set rc = '' %}{% endif %}
-          <tr class="{{ rc }}">
+          <tr class="{{ rc }}" data-broker="{{ r.broker }}" data-stock="{{ r.stock }}">
             <td class="fw-bold">{{ r.stock }}</td>
             <td><span class="badge-{{ r.exchange|lower }}">{{ r.exchange }}</span></td>
             <td>{{ r.broker }}</td>
@@ -430,7 +451,7 @@ HTML = """<!DOCTYPE html>
           {% endfor %}
           <tr class="total-row">
             <td colspan="6">PORTFOLIO TOTAL</td>
-            <td class="r" colspan="2">
+            <td class="r" colspan="2" id="portfolio-total">
               {{ '+' if total_pnl >= 0 else '' }}₹{{ '{:,.0f}'.format(total_pnl) }}
             </td>
             <td colspan="2"></td>
@@ -545,10 +566,11 @@ HTML = """<!DOCTYPE html>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// ── Chart.js line chart ────────────────────────────────────────────────────
-const rawData  = {{ chart_data | tojson }};
-const dates    = {{ dates    | tojson }};
-const stocks   = {{ stocks   | tojson }};
+// ── Raw data from server ───────────────────────────────────────────────────
+const rawData = {{ chart_data | tojson }};
+const dates   = {{ dates      | tojson }};
+const stocks  = {{ stocks     | tojson }};
+const allRows = {{ rows       | tojson }};  // full row objects for JS recalc
 
 const PALETTE = [
   '#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2',
@@ -557,46 +579,131 @@ const PALETTE = [
   '#637939','#8c6d31','#843c39','#7b4173','#5254a3','#6b6ecf','#b5cf6b'
 ];
 
-const datasets = stocks.map((stock, i) => ({
-  label: stock,
-  data: dates.map(d => (rawData[d] && rawData[d][stock] != null) ? rawData[d][stock] : null),
-  borderColor: PALETTE[i % PALETTE.length],
-  backgroundColor: 'transparent',
-  borderWidth: 1.5,
-  pointRadius: dates.length <= 10 ? 3 : 1,
-  tension: 0.2,
-  spanGaps: true,
-}));
+// ── Chart (kept as variable so we can destroy + redraw on filter) ─────────
+let pnlChart = null;
 
-new Chart(document.getElementById('pnlChart'), {
-  type: 'line',
-  data: { labels: dates, datasets },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
-    plugins: {
-      legend: {
-        position: 'bottom',
-        labels: { boxWidth: 10, font: { size: 10 }, padding: 8 }
-      },
-      tooltip: {
-        callbacks: {
-          label: ctx => `${ctx.dataset.label}: ${
-            ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + '%' : 'N/A'}`
-        }
-      }
-    },
-    scales: {
-      x: { title: { display: true, text: 'Date' }, ticks: { font: { size: 10 } } },
-      y: {
-        title: { display: true, text: 'P&L %' },
-        ticks: { callback: v => v.toFixed(1) + '%', font: { size: 10 } },
-        grid: { color: 'rgba(0,0,0,0.06)' }
+const CHART_OPTIONS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: { mode: 'index', intersect: false },
+  plugins: {
+    legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 }, padding: 8 } },
+    tooltip: {
+      callbacks: {
+        label: ctx => `${ctx.dataset.label}: ${
+          ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + '%' : 'N/A'}`
       }
     }
+  },
+  scales: {
+    x: { title: { display: true, text: 'Date' }, ticks: { font: { size: 10 } } },
+    y: {
+      title: { display: true, text: 'P&L %' },
+      ticks: { callback: v => v.toFixed(1) + '%', font: { size: 10 } },
+      grid: { color: 'rgba(0,0,0,0.06)' }
+    }
   }
-});
+};
+
+function buildDatasets(filteredStocks) {
+  return filteredStocks.map(stock => {
+    const i = stocks.indexOf(stock);
+    return {
+      label: stock,
+      data: dates.map(d => (rawData[d] && rawData[d][stock] != null) ? rawData[d][stock] : null),
+      borderColor: PALETTE[i % PALETTE.length],
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      pointRadius: dates.length <= 10 ? 3 : 1,
+      tension: 0.2,
+      spanGaps: true,
+    };
+  });
+}
+
+function renderChart(filteredStocks) {
+  if (pnlChart) pnlChart.destroy();
+  pnlChart = new Chart(document.getElementById('pnlChart'), {
+    type: 'line',
+    data: { labels: dates, datasets: buildDatasets(filteredStocks) },
+    options: CHART_OPTIONS,
+  });
+}
+
+// ── Gainers / Losers recalc ────────────────────────────────────────────────
+function fmtRs2(v)  { return v == null ? 'N/A' : '₹' + v.toLocaleString('en-IN', {minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtChgRs(v){ return v == null ? '—' : (v >= 0 ? '+₹' : '−₹') + Math.abs(v).toLocaleString('en-IN', {minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtPct(v)  { return v == null ? '—' : (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; }
+
+function renderMovers(filteredRows) {
+  let scored = filteredRows.filter(r => r.day_chg != null)
+                            .map(r => ({ ...r, _s: r.day_chg }));
+  if (!scored.length)
+    scored = filteredRows.filter(r => r.pnl_pct != null)
+                          .map(r => ({ ...r, _s: r.pnl_pct }));
+
+  const desc    = [...scored].sort((a, b) => b._s - a._s);
+  const gainers = desc.slice(0, 3);
+  const losers  = desc.slice(-3).reverse();
+
+  const noData  = '<tr><td colspan="5" class="text-center text-muted py-3">No data yet — click Fetch Now</td></tr>';
+
+  function rowHtml(r, cls) {
+    const pct = r._s;
+    return `<tr class="${cls}">
+      <td class="fw-bold">${r.stock}</td>
+      <td class="r">${fmtRs2(r.prev_close)}</td>
+      <td class="r">${fmtRs2(r.close)}</td>
+      <td class="r">${fmtChgRs(r.day_chg_rs)}</td>
+      <td class="r ${pct >= 0 ? 'pos' : 'neg'}">${fmtPct(pct)}</td>
+    </tr>`;
+  }
+
+  document.getElementById('gainers-tbody').innerHTML =
+    gainers.length ? gainers.map(r => rowHtml(r, 'pos-bg')).join('') : noData;
+  document.getElementById('losers-tbody').innerHTML =
+    losers.length  ? losers.map(r => rowHtml(r, 'neg-bg')).join('') : noData;
+}
+
+// ── Portfolio total recalc ─────────────────────────────────────────────────
+function renderTotal(filteredRows) {
+  const total = filteredRows.reduce((s, r) => s + (r.pnl_rs || 0), 0);
+  const el    = document.getElementById('portfolio-total');
+  el.textContent = (total >= 0 ? '+' : '') + '₹' + Math.round(total).toLocaleString('en-IN');
+}
+
+// ── Master filter function ─────────────────────────────────────────────────
+function applyFilter(broker) {
+  // Button active state
+  document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+  document.getElementById('f-' + broker.toLowerCase()).classList.add('active');
+
+  const filteredRows   = broker === 'All' ? allRows : allRows.filter(r => r.broker === broker);
+  const filteredStocks = filteredRows.map(r => r.stock);
+  const count          = filteredRows.length;
+
+  // 1. Holdings table rows
+  document.querySelectorAll('#holdings-tbody tr[data-broker]').forEach(tr => {
+    tr.style.display = (broker === 'All' || tr.dataset.broker === broker) ? '' : 'none';
+  });
+
+  // 2. Chart
+  renderChart(filteredStocks);
+
+  // 3. Gainers / Losers
+  renderMovers(filteredRows);
+
+  // 4. Portfolio total
+  renderTotal(filteredRows);
+
+  // 5. Hero stock count + filter label
+  document.getElementById('stock-count').textContent = count + ' stocks';
+  document.getElementById('filter-label').textContent =
+    broker === 'All' ? `Showing all ${count} stocks` : `Showing ${count} ${broker} stocks`;
+}
+
+// ── Initial render (all stocks) ────────────────────────────────────────────
+renderChart(stocks);
 
 // ── Edit modal helper ──────────────────────────────────────────────────────
 function openEdit(sym, qty, avg, yahoo, broker) {
