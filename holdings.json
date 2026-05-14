@@ -2,141 +2,169 @@
   "ASHOKLEY": {
     "yahoo": "ASHOKLEY.BO",
     "avg": 169.222194,
-    "qty": 1185
+    "qty": 1185,
+    "broker": "Zerodha"
   },
   "BAJFINANCE": {
     "yahoo": "BAJFINANCE.BO",
     "avg": 854.822666,
-    "qty": 75
+    "qty": 75,
+    "broker": "Zerodha"
   },
   "BANKINDIA": {
     "yahoo": "BANKINDIA.BO",
     "avg": 152.11763,
-    "qty": 1000
+    "qty": 1000,
+    "broker": "Zerodha"
   },
   "CANBK": {
     "yahoo": "CANBK.NS",
     "avg": 103.087662,
-    "qty": 1848
+    "qty": 1848,
+    "broker": "Zerodha"
   },
   "CGPOWER": {
     "yahoo": "CGPOWER.NS",
     "avg": 683.578125,
-    "qty": 64
+    "qty": 64,
+    "broker": "Zerodha"
   },
   "CUB": {
     "yahoo": "CUB.BO",
     "avg": 218.15367,
-    "qty": 1700
+    "qty": 1700,
+    "broker": "Zerodha"
   },
   "EICHERMOT": {
     "yahoo": "EICHERMOT.BO",
     "avg": 7249.2,
-    "qty": 5
+    "qty": 5,
+    "broker": "Zerodha"
   },
   "EIDPARRY": {
     "yahoo": "EIDPARRY.NS",
     "avg": 916.242073,
-    "qty": 82
+    "qty": 82,
+    "broker": "Zerodha"
   },
   "GOLDBEES": {
     "yahoo": "GOLDBEES.NS",
     "avg": 124.537859,
-    "qty": 3700
+    "qty": 3700,
+    "broker": "Zerodha"
   },
   "IDBI": {
     "yahoo": "IDBI.NS",
     "avg": 80.35,
-    "qty": 1
+    "qty": 1,
+    "broker": "Zerodha"
   },
   "INDIANB": {
     "yahoo": "INDIANB.NS",
     "avg": 533.157411,
-    "qty": 479
+    "qty": 479,
+    "broker": "Zerodha"
   },
   "IOB": {
     "yahoo": "IOB.BO",
     "avg": 35.065902,
-    "qty": 5000
+    "qty": 5000,
+    "broker": "Zerodha"
   },
   "KARURVYSYA": {
     "yahoo": "KARURVYSYA.NS",
     "avg": 186.027249,
-    "qty": 1923
+    "qty": 1923,
+    "broker": "Zerodha"
   },
   "LICI": {
     "yahoo": "LICI.NS",
     "avg": 769.745161,
-    "qty": 62
+    "qty": 62,
+    "broker": "Zerodha"
   },
   "M&M": {
     "yahoo": "M%26M.NS",
     "avg": 2254.927872,
-    "qty": 235
+    "qty": 235,
+    "broker": "Zerodha"
   },
   "MANAPPURAM": {
     "yahoo": "MANAPPURAM.BO",
     "avg": 171.6,
-    "qty": 600
+    "qty": 600,
+    "broker": "Zerodha"
   },
   "MAXHEALTH": {
     "yahoo": "MAXHEALTH.NS",
     "avg": 846.628571,
-    "qty": 70
+    "qty": 70,
+    "broker": "Zerodha"
   },
   "NH": {
     "yahoo": "NH.BO",
     "avg": 1827.066666,
-    "qty": 3
+    "qty": 3,
+    "broker": "Zerodha"
   },
   "PTC": {
     "yahoo": "PTC.NS",
     "avg": 171.38793,
-    "qty": 3000
+    "qty": 3000,
+    "broker": "Zerodha"
   },
   "SBIN": {
     "yahoo": "SBIN.NS",
     "avg": 736.2958333,
-    "qty": 48
+    "qty": 48,
+    "broker": "Zerodha"
   },
   "SILVERCASE": {
     "yahoo": "SILVERCASE.NS",
     "avg": 24.212601,
-    "qty": 31000
+    "qty": 31000,
+    "broker": "Zerodha"
   },
   "TMCV": {
     "yahoo": "TMCV.BO",
     "avg": 248.708608,
-    "qty": 500
+    "qty": 500,
+    "broker": "Zerodha"
   },
   "TMPV": {
     "yahoo": "TMPV.BO",
     "avg": 544.815814,
-    "qty": 604
+    "qty": 604,
+    "broker": "Zerodha"
   },
   "TVSMOTOR": {
     "yahoo": "TVSMOTOR.NS",
     "avg": 2014.697727,
-    "qty": 220
+    "qty": 220,
+    "broker": "Zerodha"
   },
   "VBL": {
     "yahoo": "VBL.NS",
     "avg": 444.721757,
-    "qty": 239
+    "qty": 239,
+    "broker": "Zerodha"
   },
   "VEDL": {
     "yahoo": "VEDL.NS",
     "avg": 282.093243,
-    "qty": 37
+    "qty": 37,
+    "broker": "Zerodha"
   },
   "YATHARTH": {
     "yahoo": "YATHARTH.NS",
     "avg": 524.511049,
-    "qty": 362
+    "qty": 362,
+    "broker": "Zerodha"
   },
   "BEL": {
     "yahoo": "BEL.NS",
     "avg": 420.8,
-    "qty": 50
+    "qty": 50,
+    "broker": "Zerodha"
   }
 }

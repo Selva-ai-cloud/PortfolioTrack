@@ -104,7 +104,7 @@ def dashboard():
                 "exchange": "BSE"
                 if (info.get("yahoo") or "").endswith(".BO")
                 else "NSE",
-                "Broker": "Zerodha",
+                "broker": info.get("broker", "Zerodha"),
                 "qty": info["qty"],
                 "avg": info["avg"],
                 "yahoo": info.get("yahoo") or "",
@@ -164,7 +164,8 @@ def add_stock():
     yahoo = request.form["yahoo"].strip() or None
     avg = float(request.form["avg"])
     qty = int(request.form["qty"])
-    h[symbol] = {"yahoo": yahoo, "avg": avg, "qty": qty}
+    broker = request.form.get("broker", "Zerodha")
+    h[symbol] = {"yahoo": yahoo, "avg": avg, "qty": qty, "broker": broker}
     save_holdings(h)
     return redirect(url_for("dashboard"))
 
@@ -177,6 +178,7 @@ def update_stock():
         h[symbol]["qty"] = int(request.form["qty"])
         h[symbol]["avg"] = float(request.form["avg"])
         h[symbol]["yahoo"] = request.form["yahoo"].strip() or None
+        h[symbol]["broker"] = request.form.get("broker", "Zerodha")
     save_holdings(h)
     return redirect(url_for("dashboard"))
 
@@ -400,7 +402,7 @@ HTML = """<!DOCTYPE html>
           <tr class="{{ rc }}">
             <td class="fw-bold">{{ r.stock }}</td>
             <td><span class="badge-{{ r.exchange|lower }}">{{ r.exchange }}</span></td>
-            <td class="fw-bold">{{ r.Broker }}</td>
+            <td>{{ r.broker }}</td>
             <td class="r">{{ r.qty|int|string }}</td>
             <td class="r">₹{{ '{:,.2f}'.format(r.avg) }}</td>
             <td class="r">{{ '₹{:,.2f}'.format(r.close) if r.close else 'N/A' }}</td>
@@ -415,7 +417,7 @@ HTML = """<!DOCTYPE html>
             </td>
             <td style="white-space:nowrap">
               <button class="btn btn-sm btn-outline-primary py-0 px-2 me-1"
-                onclick="openEdit('{{ r.stock }}','{{ r.qty }}','{{ r.avg }}','{{ r.yahoo }}')">
+                onclick="openEdit('{{ r.stock }}','{{ r.qty }}','{{ r.avg }}','{{ r.yahoo }}','{{ r.broker }}')">
                 Edit
               </button>
               <form action="/delete-stock" method="post" class="d-inline"
@@ -473,6 +475,13 @@ HTML = """<!DOCTYPE html>
               <input type="number" min="1" class="form-control" name="qty" placeholder="0" required>
             </div>
           </div>
+          <div class="mb-3 mt-2">
+            <label class="form-label fw-semibold">Broker <span class="text-danger">*</span></label>
+            <select class="form-select" name="broker" required>
+              <option value="Zerodha">Zerodha</option>
+              <option value="GoodWill">GoodWill</option>
+            </select>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -513,6 +522,13 @@ HTML = """<!DOCTYPE html>
               <label class="form-label fw-semibold">Quantity</label>
               <input type="number" min="0" class="form-control" name="qty" id="editQty" required>
             </div>
+          </div>
+          <div class="mb-3 mt-2">
+            <label class="form-label fw-semibold">Broker</label>
+            <select class="form-select" name="broker" id="editBroker">
+              <option value="Zerodha">Zerodha</option>
+              <option value="GoodWill">GoodWill</option>
+            </select>
           </div>
         </div>
         <div class="modal-footer">
@@ -583,12 +599,13 @@ new Chart(document.getElementById('pnlChart'), {
 });
 
 // ── Edit modal helper ──────────────────────────────────────────────────────
-function openEdit(sym, qty, avg, yahoo) {
+function openEdit(sym, qty, avg, yahoo, broker) {
   document.getElementById('editSymbol').value        = sym;
   document.getElementById('editSymbolDisplay').value = sym;
   document.getElementById('editQty').value           = qty;
   document.getElementById('editAvg').value           = avg;
   document.getElementById('editYahoo').value         = yahoo;
+  document.getElementById('editBroker').value        = broker || 'Zerodha';
   new bootstrap.Modal(document.getElementById('editModal')).show();
 }
 
