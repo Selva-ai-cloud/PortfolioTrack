@@ -166,5 +166,125 @@
     "avg": 420.8,
     "qty": 50,
     "broker": "Zerodha"
+  },
+  "ANANT RAJ": {
+    "yahoo": "ANANTRAJ.ns",
+    "avg": 487.35,
+    "qty": 20,
+    "broker": "GoodWill"
+  },
+  "ASIAN PAINTS": {
+    "yahoo": "ASIANPAINT.ns",
+    "avg": 2444.6,
+    "qty": 5,
+    "broker": "GoodWill"
+  },
+  "AUTHUM INVEST": {
+    "yahoo": "aiil.ns",
+    "avg": 472.15,
+    "qty": 23,
+    "broker": "GoodWill"
+  },
+  "BLS INTERNAT": {
+    "yahoo": "BLS.ns",
+    "avg": 278.75,
+    "qty": 40,
+    "broker": "GoodWill"
+  },
+  "CEMINDIA PROJ": {
+    "yahoo": "CEMPRO.ns",
+    "avg": 814.55,
+    "qty": 18,
+    "broker": "GoodWill"
+  },
+  "COCHINSHIP": {
+    "yahoo": "COCHINSHIP.NS",
+    "avg": 1734.6,
+    "qty": 7,
+    "broker": "GoodWill"
+  },
+  "CRISIL": {
+    "yahoo": "CRISIL.NS",
+    "avg": 4287.7,
+    "qty": 2,
+    "broker": "GoodWill"
+  },
+  "DIXON": {
+    "yahoo": "DIXON.NS",
+    "avg": 11176.85,
+    "qty": 1,
+    "broker": "GoodWill"
+  },
+  "GODFRYPHLP": {
+    "yahoo": "GODFRYPHLP.NS",
+    "avg": 2250.95,
+    "qty": 2,
+    "broker": "GoodWill"
+  },
+  "HAL": {
+    "yahoo": "HAL.NS",
+    "avg": 4336.7,
+    "qty": 3,
+    "broker": "GoodWill"
+  },
+  "HINDUNILVR": {
+    "yahoo": "HINDUNILVR.NS",
+    "avg": 2250.6,
+    "qty": 5,
+    "broker": "GoodWill"
+  },
+  "INOXWIND": {
+    "yahoo": "INOXWIND.NS",
+    "avg": 100.89,
+    "qty": 120,
+    "broker": "GoodWill"
+  },
+  "ITC": {
+    "yahoo": "ITC.NS",
+    "avg": 314.95,
+    "qty": 32,
+    "broker": "GoodWill"
+  },
+  "MGL": {
+    "yahoo": "MGL.NS",
+    "avg": 1135.9,
+    "qty": 9,
+    "broker": "GoodWill"
+  },
+  "GOLDBEES_GW": {
+    "yahoo": "GOLDBEES.NS",
+    "avg": 123.45,
+    "qty": 100,
+    "broker": "GoodWill"
+  },
+  "SILVERBEES": {
+    "yahoo": "SILVERBEES.NS",
+    "avg": 227.49,
+    "qty": 50,
+    "broker": "GoodWill"
+  },
+  "PIIND": {
+    "yahoo": "PIIND.NS",
+    "avg": 3054.75,
+    "qty": 3,
+    "broker": "GoodWill"
+  },
+  "SUZLON": {
+    "yahoo": "SUZLON.NS",
+    "avg": 55.65,
+    "qty": 250,
+    "broker": "GoodWill"
+  },
+  "TEJASNET": {
+    "yahoo": "TEJASNET.NS",
+    "avg": 414.7,
+    "qty": 12,
+    "broker": "GoodWill"
+  },
+  "ZYDUSLIFE": {
+    "yahoo": "ZYDUSLIFE.NS",
+    "avg": 891.65,
+    "qty": 11,
+    "broker": "GoodWill"
   }
 }
