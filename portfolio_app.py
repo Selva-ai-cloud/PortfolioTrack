@@ -230,9 +230,29 @@ HTML = """<!DOCTYPE html>
 
   /* ── Hero ── */
   .hero{background:linear-gradient(135deg,#1F3864 0%,#2d5ca8 100%);color:#fff;border-radius:12px;
-        padding:20px 24px;box-shadow:0 3px 12px rgba(0,0,0,.2)}
+        padding:18px 22px;box-shadow:0 3px 12px rgba(0,0,0,.2)}
   .hero .label{font-size:.78rem;opacity:.7;text-transform:uppercase;letter-spacing:.8px}
-  .hero .amount{font-size:2rem;font-weight:800}
+  /* ── Hero broker filter ── */
+  .hero-filter{display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+  .hero-filter .flabel{font-size:.75rem;opacity:.65;margin-right:2px;white-space:nowrap}
+  .btn-hfilter{padding:3px 13px;font-size:.75rem;border-radius:16px;
+               border:1.5px solid rgba(255,255,255,.45);background:transparent;
+               color:rgba(255,255,255,.75);cursor:pointer;transition:all .15s;white-space:nowrap}
+  .btn-hfilter:hover{background:rgba(255,255,255,.12)}
+  .btn-hfilter.active{background:rgba(255,255,255,.22);border-color:#fff;color:#fff;font-weight:600}
+  .btn-hfilter.gw.active{background:rgba(86,112,68,.65);border-color:#a8d08d}
+  /* ── Hero summary table ── */
+  .hero-tbl{width:100%;border-collapse:collapse;font-size:.82rem}
+  .hero-tbl th{opacity:.6;font-weight:500;font-size:.7rem;text-transform:uppercase;
+               letter-spacing:.6px;padding:2px 8px 6px;text-align:right;white-space:nowrap}
+  .hero-tbl th:first-child{text-align:left}
+  .hero-tbl td{padding:5px 8px;text-align:right;font-variant-numeric:tabular-nums;
+               font-feature-settings:'tnum';font-weight:600;white-space:nowrap}
+  .hero-tbl td:first-child{text-align:left;font-weight:700}
+  .hero-tbl tbody tr{border-top:1px solid rgba(255,255,255,.1)}
+  .hero-tbl .hero-total td{border-top:2px solid rgba(255,255,255,.3)!important;
+                            font-size:.85rem;opacity:.95}
+  .hpos{color:#C6EFCE}  .hneg{color:#ffb3b3}  .hneu{color:#FFE57F}
 
   /* ── Status colors (Excel conditional-format palette) ── */
   .pos{color:#1c8c44;font-weight:600}  .neg{color:#c0392b;font-weight:600}  .neu{color:#8a6800;font-weight:600}
@@ -331,22 +351,32 @@ HTML = """<!DOCTYPE html>
           data-bs-toggle="modal" data-bs-target="#addModal">＋ Add Stock</button>
 </div>
 
+{% set z_count = rows|selectattr('broker','equalto','Zerodha')|list|length %}
+{% set g_count = rows|selectattr('broker','equalto','GoodWill')|list|length %}
 <div class="container-fluid px-3 py-3">
 
-  <!-- Hero -->
+  <!-- Hero — Portfolio Summary -->
   <div class="hero mb-3">
-    <div class="row align-items-center">
-      <div class="col-auto">
-        <div class="label">Portfolio Net P&amp;L (vs Avg Buy)</div>
-        <div class="amount" style="color:#C6EFCE">
-          {{ '+' if total_pnl >= 0 else '' }}₹{{ '{:,.0f}'.format(total_pnl) }}
-        </div>
-      </div>
-      <div class="col text-end opacity-75">
-        <div class="label">Holdings</div>
-        <div class="fs-4 fw-bold" id="stock-count">{{ rows|length }} stocks</div>
-      </div>
+    <!-- Broker filter (moved here) -->
+    <div class="hero-filter">
+      <span class="flabel">🔍 Broker:</span>
+      <button class="btn-hfilter active" id="f-all"      onclick="applyFilter('All')">All ({{ rows|length }})</button>
+      <button class="btn-hfilter"        id="f-zerodha"  onclick="applyFilter('Zerodha')">Zerodha ({{ z_count }})</button>
+      <button class="btn-hfilter gw"     id="f-goodwill" onclick="applyFilter('GoodWill')">GoodWill ({{ g_count }})</button>
+      <span style="margin-left:auto;font-size:.78rem;opacity:.65" id="stock-count">{{ rows|length }} stocks</span>
     </div>
+    <!-- Broker-wise summary table -->
+    <table class="hero-tbl">
+      <thead>
+        <tr>
+          <th>Broker</th><th>Invested</th><th>Curr Value</th>
+          <th>Total P&amp;L</th><th>Day P&amp;L</th>
+        </tr>
+      </thead>
+      <tbody id="hero-summary-tbody">
+        <!-- rendered by JS -->
+      </tbody>
+    </table>
   </div>
 
   <!-- Gainers / Losers -->
@@ -403,6 +433,40 @@ HTML = """<!DOCTYPE html>
     </div>
   </div>
 
+  <!-- All-Time Top 3 Gainers / Losers -->
+  <div class="row g-3 mb-3">
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-hdr-green">🏆 All-Time Top 3 Gainers (vs Avg Buy)</div>
+        <div class="p-0">
+          <table class="table table-sm mb-0 mover-card green-tbl">
+            <thead><tr>
+              <th>Stock</th><th class="r">Avg ₹</th><th class="r">Close ₹</th><th class="r">P&amp;L ₹</th><th class="r">P&amp;L %</th>
+            </tr></thead>
+            <tbody id="alltime-gainers-tbody">
+              <tr><td colspan="5" class="text-center text-muted py-3">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-hdr-red">💔 All-Time Top 3 Losers (vs Avg Buy)</div>
+        <div class="p-0">
+          <table class="table table-sm mb-0 mover-card red-tbl">
+            <thead><tr>
+              <th>Stock</th><th class="r">Avg ₹</th><th class="r">Close ₹</th><th class="r">P&amp;L ₹</th><th class="r">P&amp;L %</th>
+            </tr></thead>
+            <tbody id="alltime-losers-tbody">
+              <tr><td colspan="5" class="text-center text-muted py-3">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Line Chart -->
   <div class="card mb-3">
     <div class="card-hdr">📈 All Stocks — P&amp;L % by Day (vs Avg Buy Price)</div>
@@ -426,16 +490,10 @@ HTML = """<!DOCTYPE html>
   </div>
 
   <!-- Holdings Table -->
-  {% set z_count = rows|selectattr('broker','equalto','Zerodha')|list|length %}
-  {% set g_count = rows|selectattr('broker','equalto','GoodWill')|list|length %}
   <div class="card mb-3">
-    <div class="card-hdr">📋 Holdings</div>
-    <div class="filter-bar">
-      <span class="flabel">🔍 Broker:</span>
-      <button class="btn-filter active" id="f-all"      onclick="applyFilter('All')">All ({{ rows|length }})</button>
-      <button class="btn-filter"        id="f-zerodha"  onclick="applyFilter('Zerodha')">Zerodha ({{ z_count }})</button>
-      <button class="btn-filter gw"     id="f-goodwill" onclick="applyFilter('GoodWill')">GoodWill ({{ g_count }})</button>
-      <span class="fcount" id="filter-label">Showing all {{ rows|length }} stocks</span>
+    <div class="card-hdr d-flex align-items-center justify-content-between">
+      <span>📋 Holdings</span>
+      <span class="fw-normal opacity-75" style="font-size:.78rem" id="filter-label">All {{ rows|length }} stocks</span>
     </div>
     <div class="tbl-wrap">
       <table class="table table-hover table-sm mb-0">
@@ -634,7 +692,7 @@ const CHART_OPTIONS = {
   maintainAspectRatio: false,
   interaction: { mode: 'index', intersect: false },
   plugins: {
-    legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 }, padding: 8 } },
+    legend: { display: false },   // ← legends removed
     tooltip: {
       callbacks: {
         label: ctx => `${ctx.dataset.label}: ${
@@ -643,7 +701,7 @@ const CHART_OPTIONS = {
     }
   },
   scales: {
-    x: { title: { display: true, text: 'Date' }, ticks: { font: { size: 10 } } },
+    x: { title: { display: false }, ticks: { font: { size: 10 } } },  // ← "Date" label removed
     y: {
       title: { display: true, text: 'P&L %' },
       ticks: { callback: v => v.toFixed(1) + '%', font: { size: 10 } },
@@ -794,6 +852,73 @@ function sortTable(col) {
   });
 }
 
+// ── Hero summary (broker-wise Invested / Curr Value / P&L / Day P&L) ─────
+function calcStats(rows) {
+  const inv  = rows.reduce((s, r) => s + r.avg * r.qty, 0);
+  const curr = rows.reduce((s, r) => s + (r.close != null ? r.close * r.qty : r.avg * r.qty), 0);
+  const pnl  = rows.reduce((s, r) => s + (r.pnl_rs  || 0), 0);
+  const day  = rows.reduce((s, r) => s + (r.day_chg_rs != null ? r.day_chg_rs * r.qty : 0), 0);
+  return { inv, curr, pnl, day };
+}
+
+function fmtInv(v)  { return '₹' + Math.round(v).toLocaleString('en-IN'); }
+function fmtPnlH(v) {
+  const cls = v > 0 ? 'hpos' : v < 0 ? 'hneg' : 'hneu';
+  const str = (v >= 0 ? '+' : '') + '₹' + Math.round(v).toLocaleString('en-IN');
+  return `<span class="${cls}">${str}</span>`;
+}
+
+function renderHeroSummary(broker) {
+  const brokers = broker === 'All' ? ['Zerodha', 'GoodWill'] : [broker];
+  let html = '';
+  brokers.forEach(b => {
+    const rows = allRows.filter(r => r.broker === b);
+    const s = calcStats(rows);
+    const pnlPct = s.inv > 0 ? (s.pnl / s.inv * 100) : 0;
+    html += `<tr>
+      <td>${b}</td>
+      <td>${fmtInv(s.inv)}</td>
+      <td>${fmtInv(s.curr)}</td>
+      <td>${fmtPnlH(s.pnl)} <small style="opacity:.65;font-size:.7rem">${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%</small></td>
+      <td>${fmtPnlH(s.day)}</td>
+    </tr>`;
+  });
+  // Total row
+  const allFiltered = broker === 'All' ? allRows : allRows.filter(r => r.broker === broker);
+  const t = calcStats(allFiltered);
+  const tPct = t.inv > 0 ? (t.pnl / t.inv * 100) : 0;
+  html += `<tr class="hero-total">
+    <td>TOTAL</td>
+    <td>${fmtInv(t.inv)}</td>
+    <td>${fmtInv(t.curr)}</td>
+    <td>${fmtPnlH(t.pnl)} <small style="opacity:.65;font-size:.7rem">${tPct >= 0 ? '+' : ''}${tPct.toFixed(1)}%</small></td>
+    <td>${fmtPnlH(t.day)}</td>
+  </tr>`;
+  document.getElementById('hero-summary-tbody').innerHTML = html;
+}
+
+// ── All-Time Top 3 Gainers / Losers ───────────────────────────────────────
+function renderAllTimeMovers(filteredRows) {
+  const withData = filteredRows.filter(r => r.pnl_pct != null);
+  const desc     = [...withData].sort((a, b) => b.pnl_pct - a.pnl_pct);
+  const gainers  = desc.slice(0, 3);
+  const losers   = desc.slice(-3).reverse();
+  const noData   = '<tr><td colspan="5" class="text-center text-muted py-3">No data yet — click Fetch Now</td></tr>';
+
+  const rowHtml = (r, cls) => `<tr class="${cls}">
+    <td class="fw-bold">${r.stock}</td>
+    <td class="r">${fmtRs2(r.avg)}</td>
+    <td class="r">${r.close != null ? fmtRs2(r.close) : 'N/A'}</td>
+    <td class="r ${r.pnl_rs > 0 ? 'pos' : 'neg'}">${r.pnl_rs != null ? (r.pnl_rs >= 0 ? '+' : '') + '₹' + Math.round(r.pnl_rs).toLocaleString('en-IN') : 'N/A'}</td>
+    <td class="r ${r.pnl_pct > 0 ? 'pos' : 'neg'}">${r.pnl_pct != null ? (r.pnl_pct >= 0 ? '+' : '') + r.pnl_pct.toFixed(2) + '%' : 'N/A'}</td>
+  </tr>`;
+
+  document.getElementById('alltime-gainers-tbody').innerHTML =
+    gainers.length ? gainers.map(r => rowHtml(r, 'pos-bg')).join('') : noData;
+  document.getElementById('alltime-losers-tbody').innerHTML =
+    losers.length  ? losers.map(r => rowHtml(r, 'neg-bg')).join('') : noData;
+}
+
 // ── Gainers / Losers recalc ────────────────────────────────────────────────
 function fmtRs2(v)   { return v == null ? '—' : '₹' + v.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function fmtChgRs(v) { return v == null ? '—' : (v >= 0 ? '+₹' : '−₹') + Math.abs(v).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
@@ -836,7 +961,7 @@ function renderTotal(filteredRows) {
 // ── Broker filter ──────────────────────────────────────────────────────────
 function applyFilter(broker) {
   activeBroker = broker;
-  document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.btn-hfilter').forEach(b => b.classList.remove('active'));
   document.getElementById('f-' + broker.toLowerCase()).classList.add('active');
 
   const filteredRows   = broker === 'All' ? allRows : allRows.filter(r => r.broker === broker);
@@ -854,23 +979,31 @@ function applyFilter(broker) {
   // 2. Chart + checkbox panel
   renderChart(filteredStocks);
 
-  // 3. Gainers / Losers
+  // 3. Today Gainers / Losers
   renderMovers(filteredRows);
 
-  // 4. Portfolio total
+  // 4. All-Time Gainers / Losers
+  renderAllTimeMovers(filteredRows);
+
+  // 5. Portfolio total
   renderTotal(filteredRows);
 
-  // 5. Hero count + label
+  // 6. Hero summary table
+  renderHeroSummary(broker);
+
+  // 7. Hero count + Holdings label
   document.getElementById('stock-count').textContent = count + ' stocks';
   document.getElementById('filter-label').textContent =
-    broker === 'All' ? `Showing all ${count} stocks` : `Showing ${count} ${broker} stocks`;
+    broker === 'All' ? `All ${count} stocks` : `${count} ${broker} stocks`;
 
-  // 6. Re-apply sort if active
+  // 8. Re-apply sort if active
   if (sortState.col) sortTable(sortState.col);
 }
 
 // ── Initial render ─────────────────────────────────────────────────────────
 renderChart(stocks);
+renderHeroSummary('All');
+renderAllTimeMovers(allRows);
 
 // ── Edit modal helper ──────────────────────────────────────────────────────
 function openEdit(sym, qty, avg, yahoo, broker) {
