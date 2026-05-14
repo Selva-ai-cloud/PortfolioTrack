@@ -558,10 +558,10 @@ HTML = """<!DOCTYPE html>
                 </svg>
               </button>
               <!-- Delete icon button -->
-              <form action="/delete-stock" method="post" class="d-inline"
-                    onsubmit="return confirm('⚠️ Remove {{ r.stock }} from portfolio?\n\nThis action cannot be undone.')">
+              <form action="/delete-stock" method="post" class="d-inline">
                 <input type="hidden" name="symbol" value="{{ r.stock }}">
-                <button type="submit" class="icon-btn" title="Delete {{ r.stock }}">
+                <button type="button" class="icon-btn" title="Delete {{ r.stock }}"
+                        onclick="confirmDelete(this, '{{ r.stock }}')">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <!-- Lid top bar -->
                     <line x1="3" y1="6" x2="21" y2="6" stroke="#5bb8f5" stroke-width="2.2" stroke-linecap="round"/>
@@ -1036,6 +1036,13 @@ function applyFilter(broker) {
 renderChart(stocks);
 renderHeroSummary('All');
 renderAllTimeMovers(allRows);
+
+// ── Delete confirmation (inline JS string was breaking on \n in attributes) ─
+function confirmDelete(btn, stock) {
+  if (confirm('Remove ' + stock + ' from portfolio?\n\nThis action cannot be undone.')) {
+    btn.closest('form').submit();
+  }
+}
 
 // ── Edit modal helper ──────────────────────────────────────────────────────
 function openEdit(sym, qty, avg, yahoo, broker) {
