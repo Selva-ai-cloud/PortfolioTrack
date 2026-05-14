@@ -336,6 +336,13 @@ HTML = """<!DOCTYPE html>
   .cb-item{display:flex;align-items:center;gap:4px;font-size:.74rem;cursor:pointer;white-space:nowrap}
   .cb-item input{width:13px;height:13px;cursor:pointer}
   .cb-vis{font-size:.72rem;color:#777;margin-left:6px}
+
+  /* ── Icon action buttons ── */
+  .icon-btn{background:none;border:none;padding:3px 4px;cursor:pointer;border-radius:6px;
+            display:inline-flex;align-items:center;justify-content:center;
+            transition:background .15s,transform .1s;vertical-align:middle}
+  .icon-btn:hover{background:rgba(0,0,0,.08);transform:scale(1.1)}
+  .icon-btn:active{transform:scale(.95)}
 </style>
 </head>
 <body>
@@ -535,14 +542,39 @@ HTML = """<!DOCTYPE html>
               {% if r.day_chg is not none %}{{ '+' if r.day_chg >= 0 else '' }}{{ '{:.2f}'.format(r.day_chg) }}%{% else %}—{% endif %}
             </td>
             <td style="white-space:nowrap">
-              <button class="btn btn-sm btn-outline-primary py-0 px-2 me-1"
+              <!-- Edit icon button -->
+              <button type="button" class="icon-btn" title="Edit {{ r.stock }}"
                 onclick="openEdit('{{ r.stock }}','{{ r.qty }}','{{ r.avg }}','{{ r.yahoo }}','{{ r.broker }}')">
-                Edit
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <!-- Circular arrows -->
+                  <path d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9c2.39 0 4.56-.93 6.18-2.44"
+                        stroke="#1F3864" stroke-width="2.2" stroke-linecap="round"/>
+                  <polyline points="21,3 18.5,7.5 14,5"
+                        stroke="#1F3864" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <!-- Pencil body -->
+                  <path d="M14.06 9.02l.92.92-8.06 8.06H6v-.92l8.06-8.06z" fill="#5bb8f5"/>
+                  <!-- Pencil tip cap -->
+                  <path d="M17.66 6c-.44 0-.86.18-1.18.48l-1.42 1.42 3 3 1.42-1.42c.66-.64.66-1.7 0-2.36l-.64-.64c-.32-.3-.74-.48-1.18-.48z" fill="#1a6db5"/>
+                </svg>
               </button>
+              <!-- Delete icon button -->
               <form action="/delete-stock" method="post" class="d-inline"
-                    onsubmit="return confirm('Remove {{ r.stock }} from portfolio?')">
+                    onsubmit="return confirm('⚠️ Remove {{ r.stock }} from portfolio?\n\nThis action cannot be undone.')">
                 <input type="hidden" name="symbol" value="{{ r.stock }}">
-                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2">Del</button>
+                <button type="submit" class="icon-btn" title="Delete {{ r.stock }}">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Lid top bar -->
+                    <line x1="3" y1="6" x2="21" y2="6" stroke="#5bb8f5" stroke-width="2.2" stroke-linecap="round"/>
+                    <!-- Handle -->
+                    <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"
+                          stroke="#5bb8f5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <!-- Body filled -->
+                    <path d="M19 6l-1.4 14.1a1 1 0 0 1-1 .9H7.4a1 1 0 0 1-1-.9L5 6z" fill="#1F3864"/>
+                    <!-- Inner lines -->
+                    <line x1="10" y1="11" x2="10" y2="17" stroke="#5bb8f5" stroke-width="1.5" stroke-linecap="round"/>
+                    <line x1="14" y1="11" x2="14" y2="17" stroke="#5bb8f5" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                </button>
               </form>
             </td>
           </tr>
