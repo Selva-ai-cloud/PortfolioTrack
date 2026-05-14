@@ -288,6 +288,34 @@ HTML = """<!DOCTYPE html>
   .btn-filter.gw{border-color:#567044;color:#567044}
   .btn-filter.gw.active{background:#567044;color:#fff}
   .filter-bar .fcount{margin-left:auto;font-size:.75rem;color:#777}
+
+  /* ── Sortable column headers ── */
+  th.sortable{cursor:pointer;user-select:none}
+  th.sortable:hover{background:#2a4a80}
+  th.sortable .si{opacity:.35;font-size:.65em;margin-left:3px}
+  th.sort-asc  .si::after{content:'▲';opacity:1}
+  th.sort-desc .si::after{content:'▼';opacity:1}
+  th.sortable:not(.sort-asc):not(.sort-desc) .si::after{content:'⇅'}
+
+  /* ── Chart stock selector panel ── */
+  .stock-sel-bar{display:flex;align-items:center;gap:8px;padding:7px 14px;
+                 background:#eef0f4;border-bottom:1px solid #dde2ea;flex-wrap:wrap}
+  .stock-sel-bar .slabel{font-size:.78rem;font-weight:600;color:#555;white-space:nowrap}
+  .btn-sel{padding:2px 11px;font-size:.75rem;border-radius:14px;border:1.5px solid #888;
+           background:#fff;color:#555;cursor:pointer;transition:all .15s}
+  .btn-sel:hover{background:#eee}
+  .btn-sel.dis-all{border-color:#c0392b;color:#c0392b}
+  .btn-sel.en-all {border-color:#567044;color:#567044}
+  #cb-toggle{font-size:.75rem;color:#1F3864;cursor:pointer;text-decoration:underline;
+             margin-left:auto;white-space:nowrap}
+  .cb-panel{padding:8px 14px 10px;background:#f8f9fc;border-bottom:1px solid #e2e6ea;
+            display:none}
+  .cb-panel.open{display:block}
+  .cb-grid{display:flex;flex-wrap:wrap;gap:3px 14px;max-height:110px;overflow-y:auto;
+           padding-top:4px}
+  .cb-item{display:flex;align-items:center;gap:4px;font-size:.74rem;cursor:pointer;white-space:nowrap}
+  .cb-item input{width:13px;height:13px;cursor:pointer}
+  .cb-vis{font-size:.72rem;color:#777;margin-left:6px}
 </style>
 </head>
 <body>
@@ -378,6 +406,18 @@ HTML = """<!DOCTYPE html>
   <!-- Line Chart -->
   <div class="card mb-3">
     <div class="card-hdr">📈 All Stocks — P&amp;L % by Day (vs Avg Buy Price)</div>
+    <!-- Stock selector bar -->
+    <div class="stock-sel-bar">
+      <span class="slabel">📊 Stocks:</span>
+      <button class="btn-sel dis-all" onclick="disableAllStocks()">Disable All</button>
+      <button class="btn-sel en-all"  onclick="enableAllStocks()">Enable All</button>
+      <span class="cb-vis" id="cb-vis-count"></span>
+      <span id="cb-toggle" onclick="toggleCbPanel()">▸ Pick individual stocks</span>
+    </div>
+    <!-- Collapsible individual checkboxes -->
+    <div class="cb-panel" id="cb-panel">
+      <div class="cb-grid" id="cb-grid"></div>
+    </div>
     <div class="card-body">
       <div class="chart-wrap">
         <canvas id="pnlChart"></canvas>
@@ -401,15 +441,15 @@ HTML = """<!DOCTYPE html>
       <table class="table table-hover table-sm mb-0">
         <thead>
           <tr>
-            <th>Stock</th>
-            <th>Exch</th>
-            <th>Broker</th>
-            <th class="r">Qty</th>
-            <th class="r">Avg ₹</th>
-            <th class="r">Close ₹</th>
-            <th class="r">P&amp;L ₹</th>
-            <th class="r">P&amp;L %</th>
-            <th class="r">Day %</th>
+            <th class="sortable" data-col="stock"    onclick="sortTable('stock')"   >Stock    <span class="si"></span></th>
+            <th class="sortable" data-col="exchange" onclick="sortTable('exchange')" >Exch     <span class="si"></span></th>
+            <th class="sortable" data-col="broker"   onclick="sortTable('broker')"  >Broker   <span class="si"></span></th>
+            <th class="sortable r" data-col="qty"    onclick="sortTable('qty')"     >Qty      <span class="si"></span></th>
+            <th class="sortable r" data-col="avg"    onclick="sortTable('avg')"     >Avg ₹    <span class="si"></span></th>
+            <th class="sortable r" data-col="close"  onclick="sortTable('close')"   >Close ₹  <span class="si"></span></th>
+            <th class="sortable r" data-col="pnl_rs" onclick="sortTable('pnl_rs')"  >P&amp;L ₹ <span class="si"></span></th>
+            <th class="sortable r" data-col="pnl_pct"onclick="sortTable('pnl_pct')" >P&amp;L % <span class="si"></span></th>
+            <th class="sortable r" data-col="day_chg"onclick="sortTable('day_chg')" >Day %    <span class="si"></span></th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -570,7 +610,7 @@ HTML = """<!DOCTYPE html>
 const rawData = {{ chart_data | tojson }};
 const dates   = {{ dates      | tojson }};
 const stocks  = {{ stocks     | tojson }};
-const allRows = {{ rows       | tojson }};  // full row objects for JS recalc
+const allRows = {{ rows       | tojson }};
 
 const PALETTE = [
   '#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2',
@@ -579,9 +619,16 @@ const PALETTE = [
   '#637939','#8c6d31','#843c39','#7b4173','#5254a3','#6b6ecf','#b5cf6b'
 ];
 
-// ── Chart (kept as variable so we can destroy + redraw on filter) ─────────
-let pnlChart = null;
+// ── State ──────────────────────────────────────────────────────────────────
+let pnlChart        = null;
+let activeStocks    = [...stocks];     // stocks in current broker filter
+let stockVisible    = {};              // {stock: true/false} — checkbox state
+stocks.forEach(s => stockVisible[s] = true);
 
+let sortState = { col: null, dir: 1 };
+let activeBroker = 'All';
+
+// ── Chart options ──────────────────────────────────────────────────────────
 const CHART_OPTIONS = {
   responsive: true,
   maintainAspectRatio: false,
@@ -605,6 +652,7 @@ const CHART_OPTIONS = {
   }
 };
 
+// ── Chart rendering ────────────────────────────────────────────────────────
 function buildDatasets(filteredStocks) {
   return filteredStocks.map(stock => {
     const i = stocks.indexOf(stock);
@@ -622,33 +670,146 @@ function buildDatasets(filteredStocks) {
 }
 
 function renderChart(filteredStocks) {
+  activeStocks = filteredStocks;
   if (pnlChart) pnlChart.destroy();
   pnlChart = new Chart(document.getElementById('pnlChart'), {
     type: 'line',
     data: { labels: dates, datasets: buildDatasets(filteredStocks) },
     options: CHART_OPTIONS,
   });
+  // Apply current visibility state
+  filteredStocks.forEach((stock, i) => {
+    if (!stockVisible[stock]) {
+      pnlChart.getDatasetMeta(i).hidden = true;
+    }
+  });
+  pnlChart.update('none');
+  buildCheckboxPanel(filteredStocks);
+}
+
+// ── Chart stock selector (checkbox panel) ──────────────────────────────────
+function buildCheckboxPanel(filteredStocks) {
+  const visCount = filteredStocks.filter(s => stockVisible[s]).length;
+  document.getElementById('cb-vis-count').textContent =
+    `${visCount} / ${filteredStocks.length} visible`;
+
+  const grid = document.getElementById('cb-grid');
+  grid.innerHTML = filteredStocks.map(stock => {
+    const i     = stocks.indexOf(stock);
+    const color = PALETTE[i % PALETTE.length];
+    const chk   = stockVisible[stock] ? 'checked' : '';
+    return `<label class="cb-item">
+      <input type="checkbox" value="${stock}" ${chk}
+        style="accent-color:${color}"
+        onchange="toggleStock('${stock}', this.checked)">
+      <span style="color:${color};font-weight:600;font-size:.72rem">${stock}</span>
+    </label>`;
+  }).join('');
+}
+
+function toggleCbPanel() {
+  const panel  = document.getElementById('cb-panel');
+  const toggle = document.getElementById('cb-toggle');
+  const open   = panel.classList.toggle('open');
+  toggle.textContent = open ? '▾ Hide stock list' : '▸ Pick individual stocks';
+}
+
+function disableAllStocks() {
+  activeStocks.forEach(s => stockVisible[s] = false);
+  activeStocks.forEach((s, i) => {
+    const idx = pnlChart.data.datasets.findIndex(d => d.label === s);
+    if (idx >= 0) pnlChart.getDatasetMeta(idx).hidden = true;
+  });
+  pnlChart.update();
+  buildCheckboxPanel(activeStocks);
+  // Auto-open panel so user can pick stocks
+  const panel = document.getElementById('cb-panel');
+  if (!panel.classList.contains('open')) toggleCbPanel();
+}
+
+function enableAllStocks() {
+  activeStocks.forEach(s => stockVisible[s] = true);
+  activeStocks.forEach((s, i) => {
+    const idx = pnlChart.data.datasets.findIndex(d => d.label === s);
+    if (idx >= 0) pnlChart.getDatasetMeta(idx).hidden = false;
+  });
+  pnlChart.update();
+  buildCheckboxPanel(activeStocks);
+}
+
+function toggleStock(stock, visible) {
+  stockVisible[stock] = visible;
+  const idx = pnlChart.data.datasets.findIndex(d => d.label === stock);
+  if (idx >= 0) {
+    pnlChart.getDatasetMeta(idx).hidden = !visible;
+    pnlChart.update();
+  }
+  buildCheckboxPanel(activeStocks);
+}
+
+// ── Sort ───────────────────────────────────────────────────────────────────
+const COL_GETTER = {
+  stock:    r => r.stock,
+  exchange: r => r.exchange,
+  broker:   r => r.broker,
+  qty:      r => r.qty      ?? null,
+  avg:      r => r.avg      ?? null,
+  close:    r => r.close    ?? null,
+  pnl_rs:   r => r.pnl_rs  ?? null,
+  pnl_pct:  r => r.pnl_pct ?? null,
+  day_chg:  r => r.day_chg  ?? null,
+};
+
+function sortTable(col) {
+  sortState.dir = (sortState.col === col) ? -sortState.dir : 1;
+  sortState.col = col;
+
+  // Update header indicators
+  document.querySelectorAll('th.sortable').forEach(th => th.classList.remove('sort-asc','sort-desc'));
+  const activeTh = document.querySelector(`th[data-col="${col}"]`);
+  if (activeTh) activeTh.classList.add(sortState.dir === 1 ? 'sort-asc' : 'sort-desc');
+
+  const getter   = COL_GETTER[col];
+  const tbody    = document.getElementById('holdings-tbody');
+  const totalRow = tbody.querySelector('.total-row');
+  const dataRows = [...tbody.querySelectorAll('tr[data-stock]')];
+
+  // Map stock → DOM row
+  const rowMap = {};
+  dataRows.forEach(tr => rowMap[tr.dataset.stock] = tr);
+
+  // Sort allRows, nulls always sink to bottom
+  const sorted = [...allRows].sort((a, b) => {
+    const va = getter(a), vb = getter(b);
+    if (va === null && vb === null) return 0;
+    if (va === null) return 1;
+    if (vb === null) return -1;
+    if (typeof va === 'string') return sortState.dir * va.localeCompare(vb);
+    return sortState.dir * (va - vb);
+  });
+
+  // Re-append in sorted order (hidden rows stay hidden via display:none)
+  sorted.forEach(r => {
+    if (rowMap[r.stock]) tbody.insertBefore(rowMap[r.stock], totalRow);
+  });
 }
 
 // ── Gainers / Losers recalc ────────────────────────────────────────────────
-function fmtRs2(v)  { return v == null ? 'N/A' : '₹' + v.toLocaleString('en-IN', {minimumFractionDigits:2,maximumFractionDigits:2}); }
-function fmtChgRs(v){ return v == null ? '—' : (v >= 0 ? '+₹' : '−₹') + Math.abs(v).toLocaleString('en-IN', {minimumFractionDigits:2,maximumFractionDigits:2}); }
-function fmtPct(v)  { return v == null ? '—' : (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; }
+function fmtRs2(v)   { return v == null ? '—' : '₹' + v.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtChgRs(v) { return v == null ? '—' : (v >= 0 ? '+₹' : '−₹') + Math.abs(v).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtPct(v)   { return v == null ? '—' : (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; }
 
 function renderMovers(filteredRows) {
-  let scored = filteredRows.filter(r => r.day_chg != null)
-                            .map(r => ({ ...r, _s: r.day_chg }));
+  let scored = filteredRows.filter(r => r.day_chg != null).map(r => ({ ...r, _s: r.day_chg }));
   if (!scored.length)
-    scored = filteredRows.filter(r => r.pnl_pct != null)
-                          .map(r => ({ ...r, _s: r.pnl_pct }));
+    scored = filteredRows.filter(r => r.pnl_pct != null).map(r => ({ ...r, _s: r.pnl_pct }));
 
   const desc    = [...scored].sort((a, b) => b._s - a._s);
   const gainers = desc.slice(0, 3);
   const losers  = desc.slice(-3).reverse();
-
   const noData  = '<tr><td colspan="5" class="text-center text-muted py-3">No data yet — click Fetch Now</td></tr>';
 
-  function rowHtml(r, cls) {
+  const rowHtml = (r, cls) => {
     const pct = r._s;
     return `<tr class="${cls}">
       <td class="fw-bold">${r.stock}</td>
@@ -657,7 +818,7 @@ function renderMovers(filteredRows) {
       <td class="r">${fmtChgRs(r.day_chg_rs)}</td>
       <td class="r ${pct >= 0 ? 'pos' : 'neg'}">${fmtPct(pct)}</td>
     </tr>`;
-  }
+  };
 
   document.getElementById('gainers-tbody').innerHTML =
     gainers.length ? gainers.map(r => rowHtml(r, 'pos-bg')).join('') : noData;
@@ -672,9 +833,9 @@ function renderTotal(filteredRows) {
   el.textContent = (total >= 0 ? '+' : '') + '₹' + Math.round(total).toLocaleString('en-IN');
 }
 
-// ── Master filter function ─────────────────────────────────────────────────
+// ── Broker filter ──────────────────────────────────────────────────────────
 function applyFilter(broker) {
-  // Button active state
+  activeBroker = broker;
   document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
   document.getElementById('f-' + broker.toLowerCase()).classList.add('active');
 
@@ -682,12 +843,15 @@ function applyFilter(broker) {
   const filteredStocks = filteredRows.map(r => r.stock);
   const count          = filteredRows.length;
 
-  // 1. Holdings table rows
+  // Reset stock visibility for new filter scope
+  filteredStocks.forEach(s => stockVisible[s] = true);
+
+  // 1. Holdings rows
   document.querySelectorAll('#holdings-tbody tr[data-broker]').forEach(tr => {
     tr.style.display = (broker === 'All' || tr.dataset.broker === broker) ? '' : 'none';
   });
 
-  // 2. Chart
+  // 2. Chart + checkbox panel
   renderChart(filteredStocks);
 
   // 3. Gainers / Losers
@@ -696,13 +860,16 @@ function applyFilter(broker) {
   // 4. Portfolio total
   renderTotal(filteredRows);
 
-  // 5. Hero stock count + filter label
+  // 5. Hero count + label
   document.getElementById('stock-count').textContent = count + ' stocks';
   document.getElementById('filter-label').textContent =
     broker === 'All' ? `Showing all ${count} stocks` : `Showing ${count} ${broker} stocks`;
+
+  // 6. Re-apply sort if active
+  if (sortState.col) sortTable(sortState.col);
 }
 
-// ── Initial render (all stocks) ────────────────────────────────────────────
+// ── Initial render ─────────────────────────────────────────────────────────
 renderChart(stocks);
 
 // ── Edit modal helper ──────────────────────────────────────────────────────
