@@ -73,7 +73,7 @@ def dashboard():
     history = load_history()
     fetch_msg = request.args.get("fetch_msg", "")
 
-    dates = sorted(history.keys())
+    dates = sorted(history.keys(), key=lambda d: datetime.strptime(d, "%d-%b-%y"))
     today_data = history[dates[-1]] if dates else {}
     prev_data = history[dates[-2]] if len(dates) > 1 else {}
     last_updated = dates[-1] if dates else "No data yet"
@@ -1037,9 +1037,9 @@ renderChart(stocks);
 renderHeroSummary('All');
 renderAllTimeMovers(allRows);
 
-// ── Delete confirmation (inline JS string was breaking on \n in attributes) ─
+// ── Delete confirmation ────────────────────────────────────────────────────
 function confirmDelete(btn, stock) {
-  if (confirm('Remove ' + stock + ' from portfolio?\n\nThis action cannot be undone.')) {
+  if (confirm('Remove ' + stock + ' from portfolio?\\n\\nThis action cannot be undone.')) {
     btn.closest('form').submit();
   }
 }

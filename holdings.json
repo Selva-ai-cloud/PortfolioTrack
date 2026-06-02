@@ -48,7 +48,7 @@
     "broker": "Zerodha"
   },
   "GOLDBEES": {
-    "yahoo": "GOLDBEES.NS",
+    "yahoo": "GOLDBEES.BO",
     "avg": 124.537859,
     "qty": 3700,
     "broker": "Zerodha"
@@ -61,8 +61,8 @@
   },
   "INDIANB": {
     "yahoo": "INDIANB.NS",
-    "avg": 533.157411,
-    "qty": 479,
+    "avg": 564.45,
+    "qty": 541,
     "broker": "Zerodha"
   },
   "IOB": {
@@ -85,8 +85,8 @@
   },
   "M&M": {
     "yahoo": "M%26M.NS",
-    "avg": 2254.927872,
-    "qty": 235,
+    "avg": 2272.12,
+    "qty": 240,
     "broker": "Zerodha"
   },
   "MANAPPURAM": {
@@ -103,8 +103,8 @@
   },
   "NH": {
     "yahoo": "NH.BO",
-    "avg": 1827.066666,
-    "qty": 3,
+    "avg": 1848.45,
+    "qty": 50,
     "broker": "Zerodha"
   },
   "PTC": {
@@ -139,8 +139,8 @@
   },
   "TVSMOTOR": {
     "yahoo": "TVSMOTOR.NS",
-    "avg": 2014.697727,
-    "qty": 220,
+    "avg": 2044.5,
+    "qty": 225,
     "broker": "Zerodha"
   },
   "VBL": {
@@ -151,8 +151,8 @@
   },
   "VEDL": {
     "yahoo": "VEDL.NS",
-    "avg": 282.093243,
-    "qty": 37,
+    "avg": 308.26,
+    "qty": 87,
     "broker": "Zerodha"
   },
   "YATHARTH": {
@@ -163,128 +163,146 @@
   },
   "BEL": {
     "yahoo": "BEL.NS",
-    "avg": 420.8,
-    "qty": 50,
+    "avg": 415.4,
+    "qty": 100,
     "broker": "Zerodha"
   },
   "ANANT RAJ": {
-    "yahoo": "ANANTRAJ.ns",
-    "avg": 487.35,
+    "yahoo": "ANANTRAJ.NS",
+    "avg": 494.26,
     "qty": 20,
     "broker": "GoodWill"
   },
   "ASIAN PAINTS": {
-    "yahoo": "ASIANPAINT.ns",
-    "avg": 2444.6,
+    "yahoo": "ASIANPAINT.NS",
+    "avg": 2275.22,
     "qty": 5,
     "broker": "GoodWill"
   },
   "AUTHUM INVEST": {
-    "yahoo": "aiil.ns",
-    "avg": 472.15,
+    "yahoo": "AIIL.NS",
+    "avg": 433.0,
     "qty": 23,
     "broker": "GoodWill"
   },
   "BLS INTERNAT": {
-    "yahoo": "BLS.ns",
-    "avg": 278.75,
+    "yahoo": "BLS.NS",
+    "avg": 259.59,
     "qty": 40,
     "broker": "GoodWill"
   },
   "CEMINDIA PROJ": {
-    "yahoo": "CEMPRO.ns",
-    "avg": 814.55,
+    "yahoo": "CEMPRO.NS",
+    "avg": 558.98,
     "qty": 18,
     "broker": "GoodWill"
   },
   "COCHINSHIP": {
     "yahoo": "COCHINSHIP.NS",
-    "avg": 1734.6,
+    "avg": 1433.83,
     "qty": 7,
     "broker": "GoodWill"
   },
   "CRISIL": {
     "yahoo": "CRISIL.NS",
-    "avg": 4287.7,
+    "avg": 4292.96,
     "qty": 2,
     "broker": "GoodWill"
   },
   "DIXON": {
     "yahoo": "DIXON.NS",
-    "avg": 11176.85,
+    "avg": 10467.08,
     "qty": 1,
     "broker": "GoodWill"
   },
   "GODFRYPHLP": {
     "yahoo": "GODFRYPHLP.NS",
-    "avg": 2250.95,
+    "avg": 1966.99,
     "qty": 2,
     "broker": "GoodWill"
   },
   "HAL": {
     "yahoo": "HAL.NS",
-    "avg": 4336.7,
+    "avg": 3911.26,
     "qty": 3,
     "broker": "GoodWill"
   },
   "HINDUNILVR": {
     "yahoo": "HINDUNILVR.NS",
-    "avg": 2250.6,
+    "avg": 2244.17,
     "qty": 5,
     "broker": "GoodWill"
   },
   "INOXWIND": {
     "yahoo": "INOXWIND.NS",
-    "avg": 100.89,
+    "avg": 85.32,
     "qty": 120,
     "broker": "GoodWill"
   },
   "ITC": {
     "yahoo": "ITC.NS",
-    "avg": 314.95,
+    "avg": 310.49,
     "qty": 32,
     "broker": "GoodWill"
   },
   "MGL": {
     "yahoo": "MGL.NS",
-    "avg": 1135.9,
+    "avg": 1118.77,
     "qty": 9,
     "broker": "GoodWill"
   },
   "GOLDBEES_GW": {
     "yahoo": "GOLDBEES.NS",
-    "avg": 123.45,
+    "avg": 133.3836,
     "qty": 100,
     "broker": "GoodWill"
   },
   "SILVERBEES": {
     "yahoo": "SILVERBEES.NS",
-    "avg": 227.49,
+    "avg": 252.8078,
     "qty": 50,
     "broker": "GoodWill"
   },
   "PIIND": {
     "yahoo": "PIIND.NS",
-    "avg": 3054.75,
+    "avg": 3087.06,
     "qty": 3,
     "broker": "GoodWill"
   },
   "SUZLON": {
     "yahoo": "SUZLON.NS",
-    "avg": 55.65,
+    "avg": 39.7,
     "qty": 250,
     "broker": "GoodWill"
   },
   "TEJASNET": {
     "yahoo": "TEJASNET.NS",
-    "avg": 414.7,
+    "avg": 402.3,
     "qty": 12,
     "broker": "GoodWill"
   },
   "ZYDUSLIFE": {
     "yahoo": "ZYDUSLIFE.NS",
-    "avg": 891.65,
+    "avg": 911.84,
     "qty": 11,
     "broker": "GoodWill"
+  },
+  "TVSMNCRPS": {
+    "yahoo": "TVSMNCRPS-P1.NS",
+    "avg": 0.0,
+    "qty": 800,
+    "broker": "Zerodha"
+  },
+  "NATIONALUM": {
+    "yahoo": "NATIONALUM.NS",
+    "avg": 405.5,
+    "qty": 50,
+    "broker": "Zerodha"
+  },
+  "IEX": {
+    "yahoo": "IEX.NS",
+    "avg": 128.1,
+    "qty": 391,
+    "broker": "Zerodha"
   }
 }
