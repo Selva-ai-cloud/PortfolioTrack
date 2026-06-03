@@ -7,14 +7,16 @@ Open: http://localhost:5050
 import json
 import os
 import subprocess
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from flask import Flask, redirect, render_template_string, request, url_for
+import yfinance as yf
+from flask import Flask, jsonify, redirect, render_template_string, request, url_for
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-HOLDINGS_FILE = os.path.join(BASE_DIR, "holdings.json")
-HISTORY_FILE = os.path.join(BASE_DIR, "portfolio_history.json")
-FETCH_SCRIPT = os.path.join(BASE_DIR, "fetch_eod.py")
+HOLDINGS_FILE  = os.path.join(BASE_DIR, "holdings.json")
+HISTORY_FILE   = os.path.join(BASE_DIR, "portfolio_history.json")
+DMA_CACHE_FILE = os.path.join(BASE_DIR, "dma_cache.json")
+FETCH_SCRIPT   = os.path.join(BASE_DIR, "fetch_eod.py")
 PYTHON = "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3"
 
 app = Flask(__name__)
@@ -64,6 +66,132 @@ def load_history():
         backup = HISTORY_FILE + f".bak.{int(time.time())}"
         shutil.copy2(HISTORY_FILE, backup)
         return {}
+
+
+# ── DMA helpers ───────────────────────────────────────────────────────────────
+def _detect_cross(cmp, prev_close, dma_today, dma_prev, label):
+    """Return a cross description if price crossed the DMA vs previous day."""
+    if dma_today is None or dma_prev is None:
+        return None
+    was_below = prev_close < dma_prev
+    now_above = cmp >= dma_today
+    was_above = prev_close > dma_prev
+    now_below = cmp <= dma_today
+    if was_below and now_above:
+        return f"↑ {label}"
+    if was_above and now_below:
+        return f"↓ {label}"
+    return None
+
+
+def _b_state(cmp, dma20, dma50, dma200):
+    """Classify bullish/bearish state based on CMP vs DMAs."""
+    valid = [(cmp > d, d is not None) for d in [dma200, dma50, dma20] if d is not None]
+    if not valid:
+        return "—"
+    above = sum(1 for ok, _ in valid if ok)
+    total = len(valid)
+    if above == total:
+        return "Bullish"
+    if above == 0:
+        return "Bearish"
+    if above >= total // 2 + 1:
+        return "Mostly Bullish"
+    return "Mostly Bearish"
+
+
+def compute_dma_data():
+    """Fetch 1yr price history for all holdings, compute 20/50/200 DMA + crossovers."""
+    holdings = load_holdings()
+    symbol_map = {info["yahoo"]: stock
+                  for stock, info in holdings.items() if info.get("yahoo")}
+    yahoo_symbols = list(symbol_map.keys())
+
+    try:
+        raw = yf.download(
+            tickers=yahoo_symbols,
+            period="1y",
+            interval="1d",
+            auto_adjust=True,
+            progress=False,
+            threads=True,
+        )
+        if "Close" in raw.columns:
+            close_df = raw["Close"]
+        else:
+            close_df = raw.xs("Close", axis=1, level=0)
+    except Exception as e:
+        return {"error": str(e)}
+
+    result = {}
+    for yahoo_sym in yahoo_symbols:
+        stock = symbol_map[yahoo_sym]
+        try:
+            series = close_df[yahoo_sym].dropna() if yahoo_sym in close_df.columns else close_df.dropna()
+            if len(series) < 2:
+                raise ValueError("insufficient data")
+
+            cmp       = round(float(series.iloc[-1]), 2)
+            prev_close = round(float(series.iloc[-2]), 2)
+
+            # Today's DMAs
+            dma20  = round(float(series.iloc[-20:].mean()),   2) if len(series) >= 20  else None
+            dma50  = round(float(series.iloc[-50:].mean()),   2) if len(series) >= 50  else None
+            dma200 = round(float(series.iloc[-200:].mean()),  2) if len(series) >= 200 else None
+
+            # Previous day's DMAs (shift window back by 1)
+            prev_dma20  = round(float(series.iloc[-21:-1].mean()), 2) if len(series) >= 21  else None
+            prev_dma50  = round(float(series.iloc[-51:-1].mean()), 2) if len(series) >= 51  else None
+            prev_dma200 = round(float(series.iloc[-201:-1].mean()),2) if len(series) >= 201 else None
+
+            # Crossover detection — most significant wins (200 > 50 > 20)
+            crosses = []
+            for dma_t, dma_p, lbl in [
+                (dma200, prev_dma200, "200DMA"),
+                (dma50,  prev_dma50,  "50DMA"),
+                (dma20,  prev_dma20,  "20DMA"),
+            ]:
+                c = _detect_cross(cmp, prev_close, dma_t, dma_p, lbl)
+                if c:
+                    crosses.append(c)
+
+            result[stock] = {
+                "cmp":    cmp,
+                "dma20":  dma20,
+                "dma50":  dma50,
+                "dma200": dma200,
+                "cross":  ", ".join(crosses) if crosses else "—",
+                "b_state": _b_state(cmp, dma20, dma50, dma200),
+            }
+        except Exception:
+            result[stock] = {"cmp": None, "dma20": None, "dma50": None,
+                             "dma200": None, "cross": "—", "b_state": "—"}
+
+    return result
+
+
+# ── DMA API route ──────────────────────────────────────────────────────────────
+@app.route("/api/dma")
+def api_dma():
+    force = request.args.get("force", "0") == "1"
+    # Use cache if fresh (< 4 hours)
+    if not force and os.path.exists(DMA_CACHE_FILE):
+        try:
+            with open(DMA_CACHE_FILE) as f:
+                cache = json.load(f)
+            cached_at = datetime.fromisoformat(cache.get("fetched_at", "2000-01-01"))
+            if datetime.now() - cached_at < timedelta(hours=4):
+                return jsonify(cache["data"])
+        except Exception:
+            pass
+
+    data = compute_dma_data()
+    try:
+        with open(DMA_CACHE_FILE, "w") as f:
+            json.dump({"fetched_at": datetime.now().isoformat(), "data": data}, f, indent=2)
+    except Exception:
+        pass
+    return jsonify(data)
 
 
 # ── Dashboard route ───────────────────────────────────────────────────────────
@@ -343,6 +471,33 @@ HTML = """<!DOCTYPE html>
             transition:background .15s,transform .1s;vertical-align:middle}
   .icon-btn:hover{background:rgba(0,0,0,.08);transform:scale(1.1)}
   .icon-btn:active{transform:scale(.95)}
+
+  /* ── Holdings / Technical tab switcher ── */
+  .card-tabs{display:flex;gap:0;align-items:stretch}
+  .card-tab{padding:9px 18px;font-size:.85rem;font-weight:600;cursor:pointer;
+            background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);
+            border:none;border-right:1px solid rgba(255,255,255,.15);
+            transition:all .15s;white-space:nowrap}
+  .card-tab:first-child{border-radius:10px 0 0 0}
+  .card-tab.active{background:rgba(255,255,255,.25);color:#fff}
+  .card-tab:hover:not(.active){background:rgba(255,255,255,.18);color:#fff}
+
+  /* ── DMA table ── */
+  .dma-above{color:#1c8c44!important;font-weight:600}
+  .dma-below{color:#c0392b!important;font-weight:600}
+  .dma-neutral{color:#8a6800!important}
+  .badge-bull{background:#C6EFCE;color:#1c5e2e;padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:700;white-space:nowrap}
+  .badge-bear{background:#FFC7CE;color:#9b1c1c;padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:700;white-space:nowrap}
+  .badge-mbull{background:#e2f0d9;color:#375623;padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:600;white-space:nowrap}
+  .badge-mbear{background:#fce4ec;color:#7b1034;padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:600;white-space:nowrap}
+  .badge-neu{background:#FFEB9C;color:#7d6608;padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:600;white-space:nowrap}
+  .cross-up{color:#1c8c44;font-weight:700}
+  .cross-dn{color:#c0392b;font-weight:700}
+  .dma-refresh-btn{font-size:.72rem;background:rgba(255,255,255,.15);color:rgba(255,255,255,.8);
+                   border:1px solid rgba(255,255,255,.3);border-radius:12px;padding:2px 10px;
+                   cursor:pointer;transition:all .15s;white-space:nowrap}
+  .dma-refresh-btn:hover{background:rgba(255,255,255,.25);color:#fff}
+  .dma-loading{text-align:center;padding:24px;color:#777;font-size:.9rem}
 </style>
 </head>
 <body>
@@ -496,12 +651,18 @@ HTML = """<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- Holdings Table -->
+  <!-- Holdings + Technical Tabs -->
   <div class="card mb-3">
-    <div class="card-hdr d-flex align-items-center justify-content-between">
-      <span>📋 Holdings</span>
+    <div class="card-hdr d-flex align-items-center justify-content-between" style="padding:0 16px 0 0">
+      <div class="card-tabs">
+        <button class="card-tab active" id="tab-holdings"  onclick="switchHoldingsTab('holdings')">📋 Holdings</button>
+        <button class="card-tab"        id="tab-technical" onclick="switchHoldingsTab('technical')">📊 Technical</button>
+      </div>
       <span class="fw-normal opacity-75" style="font-size:.78rem" id="filter-label">All {{ rows|length }} stocks</span>
     </div>
+
+    <!-- ── HOLDINGS PANEL ── -->
+    <div id="holdings-panel">
     <div class="tbl-wrap">
       <table class="table table-hover table-sm mb-0">
         <thead>
@@ -589,7 +750,36 @@ HTML = """<!DOCTYPE html>
         </tbody>
       </table>
     </div>
-  </div>
+    </div><!-- /holdings-panel -->
+
+    <!-- ── TECHNICAL PANEL ── -->
+    <div id="technical-panel" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:flex-end;
+                  padding:8px 16px;background:#eef0f4;border-bottom:1px solid #dde2ea;gap:8px">
+        <span style="font-size:.75rem;color:#666" id="dma-cache-time"></span>
+        <button class="dma-refresh-btn" onclick="loadDmaData(true)">⟳ Refresh DMA</button>
+      </div>
+      <div class="tbl-wrap">
+        <table class="table table-hover table-sm mb-0" id="dma-table">
+          <thead>
+            <tr>
+              <th class="sortable" onclick="sortDmaTable('stock')">Stock <span class="si"></span></th>
+              <th class="r sortable" onclick="sortDmaTable('cmp')">CMP ₹ <span class="si"></span></th>
+              <th class="r sortable" onclick="sortDmaTable('dma20')">20 DMA <span class="si"></span></th>
+              <th class="r sortable" onclick="sortDmaTable('dma50')">50 DMA <span class="si"></span></th>
+              <th class="r sortable" onclick="sortDmaTable('dma200')">200 DMA <span class="si"></span></th>
+              <th class="sortable" onclick="sortDmaTable('cross')">Cross <span class="si"></span></th>
+              <th class="sortable" onclick="sortDmaTable('b_state')">B-State <span class="si"></span></th>
+            </tr>
+          </thead>
+          <tbody id="dma-tbody">
+            <tr><td colspan="7" class="dma-loading">Click the tab to load DMA data…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div><!-- /technical-panel -->
+
+  </div><!-- /card -->
 
 </div><!-- /container -->
 
@@ -1030,6 +1220,14 @@ function applyFilter(broker) {
 
   // 8. Re-apply sort if active
   if (sortState.col) sortTable(sortState.col);
+
+  // 9. Rebuild DMA table rows for new broker scope (if already loaded)
+  if (dmaLoaded) {
+    fetch('/api/dma').then(r => r.json()).then(data => {
+      dmaRows = buildDmaRows(data);
+      renderDmaTable(dmaRows);
+    });
+  }
 }
 
 // ── Initial render ─────────────────────────────────────────────────────────
@@ -1053,6 +1251,125 @@ function openEdit(sym, qty, avg, yahoo, broker) {
   document.getElementById('editYahoo').value         = yahoo;
   document.getElementById('editBroker').value        = broker || 'Zerodha';
   new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+
+// ── Holdings / Technical tab switcher ─────────────────────────────────────
+let dmaLoaded = false;
+let dmaRows   = [];
+let dmaSortState = { col: null, dir: 1 };
+
+function switchHoldingsTab(tab) {
+  document.getElementById('holdings-panel').style.display  = tab === 'holdings'  ? '' : 'none';
+  document.getElementById('technical-panel').style.display = tab === 'technical' ? '' : 'none';
+  document.getElementById('tab-holdings').classList.toggle('active',  tab === 'holdings');
+  document.getElementById('tab-technical').classList.toggle('active', tab === 'technical');
+  if (tab === 'technical' && !dmaLoaded) loadDmaData(false);
+}
+
+function loadDmaData(force) {
+  const tbody = document.getElementById('dma-tbody');
+  tbody.innerHTML = '<tr><td colspan="7" class="dma-loading">⏳ Fetching 1yr price history &amp; computing DMAs…</td></tr>';
+  const url = '/api/dma' + (force ? '?force=1' : '');
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      dmaLoaded = true;
+      dmaRows = buildDmaRows(data);
+      renderDmaTable(dmaRows);
+    })
+    .catch(err => {
+      tbody.innerHTML = '<tr><td colspan="7" class="dma-loading text-danger">Error: ' + err + '</td></tr>';
+    });
+}
+
+function buildDmaRows(data) {
+  // Merge with allRows to respect active broker filter
+  return allRows
+    .filter(r => activeBroker === 'All' || r.broker === activeBroker)
+    .map(r => {
+      const d = data[r.stock] || {};
+      return {
+        stock:   r.stock,
+        broker:  r.broker,
+        cmp:     d.cmp    ?? null,
+        dma20:   d.dma20  ?? null,
+        dma50:   d.dma50  ?? null,
+        dma200:  d.dma200 ?? null,
+        cross:   d.cross  ?? '—',
+        b_state: d.b_state ?? '—',
+      };
+    });
+}
+
+function dmaClass(cmp, dma) {
+  if (cmp == null || dma == null) return '';
+  return cmp > dma ? 'dma-above' : 'dma-below';
+}
+
+function bStateHtml(s) {
+  if (s === 'Bullish')        return '<span class="badge-bull">▲ Bullish</span>';
+  if (s === 'Bearish')        return '<span class="badge-bear">▼ Bearish</span>';
+  if (s === 'Mostly Bullish') return '<span class="badge-mbull">↑ Mostly Bullish</span>';
+  if (s === 'Mostly Bearish') return '<span class="badge-mbear">↓ Mostly Bearish</span>';
+  if (s === 'Neutral')        return '<span class="badge-neu">~ Neutral</span>';
+  return s;
+}
+
+function crossHtml(c) {
+  if (!c || c === '—') return '<span style="color:#aaa">—</span>';
+  return c.split(', ').map(part => {
+    const cls = part.startsWith('↑') ? 'cross-up' : 'cross-dn';
+    return `<span class="${cls}">${part}</span>`;
+  }).join(' ');
+}
+
+function fmt(v) {
+  if (v == null) return '<span style="color:#aaa">—</span>';
+  return '₹' + v.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function renderDmaTable(rows) {
+  const tbody = document.getElementById('dma-tbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="dma-loading">No data</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => `
+    <tr data-broker="${r.broker}">
+      <td class="fw-bold">${r.stock}</td>
+      <td class="r">${fmt(r.cmp)}</td>
+      <td class="r ${dmaClass(r.cmp, r.dma20)}">${fmt(r.dma20)}</td>
+      <td class="r ${dmaClass(r.cmp, r.dma50)}">${fmt(r.dma50)}</td>
+      <td class="r ${dmaClass(r.cmp, r.dma200)}">${fmt(r.dma200)}</td>
+      <td>${crossHtml(r.cross)}</td>
+      <td>${bStateHtml(r.b_state)}</td>
+    </tr>`).join('');
+}
+
+function sortDmaTable(col) {
+  dmaSortState.dir = (dmaSortState.col === col) ? -dmaSortState.dir : 1;
+  dmaSortState.col = col;
+
+  // Update header arrows
+  document.querySelectorAll('#dma-table th.sortable').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc');
+  });
+  // find the clicked th by its onclick text
+  document.querySelectorAll('#dma-table th.sortable').forEach(th => {
+    if (th.getAttribute('onclick') === `sortDmaTable('${col}')`) {
+      th.classList.add(dmaSortState.dir === 1 ? 'sort-asc' : 'sort-desc');
+    }
+  });
+
+  const sorted = [...dmaRows].sort((a, b) => {
+    const va = a[col], vb = b[col];
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    if (typeof va === 'string') return dmaSortState.dir * va.localeCompare(vb);
+    return dmaSortState.dir * (va - vb);
+  });
+  renderDmaTable(sorted);
 }
 
 // ── Toast for Fetch Now ────────────────────────────────────────────────────
