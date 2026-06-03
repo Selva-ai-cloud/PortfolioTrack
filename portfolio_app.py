@@ -12,11 +12,13 @@ from datetime import datetime, timedelta
 import yfinance as yf
 from flask import Flask, jsonify, redirect, render_template_string, request, url_for
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-HOLDINGS_FILE  = os.path.join(BASE_DIR, "holdings.json")
-HISTORY_FILE   = os.path.join(BASE_DIR, "portfolio_history.json")
-DMA_CACHE_FILE = os.path.join(BASE_DIR, "dma_cache.json")
-FETCH_SCRIPT   = os.path.join(BASE_DIR, "fetch_eod.py")
+BASE_DIR            = os.path.dirname(os.path.abspath(__file__))
+HOLDINGS_FILE       = os.path.join(BASE_DIR, "holdings.json")
+HISTORY_FILE        = os.path.join(BASE_DIR, "portfolio_history.json")
+DMA_CACHE_FILE      = os.path.join(BASE_DIR, "dma_cache.json")
+WATCHLIST_FILE      = os.path.join(BASE_DIR, "watchlist.json")
+WL_DMA_CACHE_FILE   = os.path.join(BASE_DIR, "watchlist_dma_cache.json")
+FETCH_SCRIPT        = os.path.join(BASE_DIR, "fetch_eod.py")
 PYTHON = "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3"
 
 app = Flask(__name__)
@@ -116,11 +118,30 @@ def _signal(cmp, ema20, dma50, dma200, dma200_slope, ema_dist_pct):
     return "Watch"
 
 
-def compute_dma_data():
-    """Fetch 1yr price history, compute 20EMA / 50DMA / 200DMA + strategy signals."""
-    holdings = load_holdings()
-    symbol_map = {info["yahoo"]: stock
-                  for stock, info in holdings.items() if info.get("yahoo")}
+def load_watchlist():
+    """Return list of Yahoo Finance symbols in watchlist."""
+    if not os.path.exists(WATCHLIST_FILE):
+        return []
+    try:
+        with open(WATCHLIST_FILE) as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+
+def save_watchlist(wl):
+    with open(WATCHLIST_FILE, "w") as f:
+        json.dump(wl, f, indent=2)
+
+
+def _compute_dma_for_symbols(symbol_map):
+    """
+    Core DMA/EMA computation.
+    symbol_map: {yahoo_symbol: display_key}
+    Returns: {display_key: {...metrics...}}
+    """
+    if not symbol_map:
+        return {}
     yahoo_symbols = list(symbol_map.keys())
 
     try:
@@ -132,16 +153,17 @@ def compute_dma_data():
             progress=False,
             threads=True,
         )
-        if "Close" in raw.columns:
-            close_df = raw["Close"]
-        else:
+        # yfinance always returns multi-level columns (even single ticker)
+        try:
             close_df = raw.xs("Close", axis=1, level=0)
+        except (KeyError, TypeError):
+            close_df = raw["Close"] if "Close" in raw.columns else raw
     except Exception as e:
         return {"error": str(e)}
 
     result = {}
     for yahoo_sym in yahoo_symbols:
-        stock = symbol_map[yahoo_sym]
+        key = symbol_map[yahoo_sym]
         try:
             series = close_df[yahoo_sym].dropna() if yahoo_sym in close_df.columns else close_df.dropna()
             if len(series) < 2:
@@ -150,49 +172,36 @@ def compute_dma_data():
             cmp        = round(float(series.iloc[-1]), 2)
             prev_close = round(float(series.iloc[-2]), 2)
 
-            # 20 EMA (exponential — faster, better entry signal)
-            ema_series  = series.ewm(span=20, adjust=False).mean()
-            ema20       = round(float(ema_series.iloc[-1]), 2)
-            prev_ema20  = round(float(ema_series.iloc[-2]), 2)
+            ema_series = series.ewm(span=20, adjust=False).mean()
+            ema20      = round(float(ema_series.iloc[-1]), 2)
+            prev_ema20 = round(float(ema_series.iloc[-2]), 2)
 
-            # 50 & 200 SMA
             dma50  = round(float(series.iloc[-50:].mean()),  2) if len(series) >= 50  else None
             dma200 = round(float(series.iloc[-200:].mean()), 2) if len(series) >= 200 else None
 
-            # Previous day's DMAs
             prev_dma50  = round(float(series.iloc[-51:-1].mean()), 2) if len(series) >= 51  else None
             prev_dma200 = round(float(series.iloc[-201:-1].mean()),2) if len(series) >= 201 else None
 
-            # 200DMA slope — compare today vs ~20 trading days ago
             dma200_slope = None
             if len(series) >= 220:
                 d200_now = float(series.iloc[-200:].mean())
                 d200_ago = float(series.iloc[-220:-20].mean())
-                if d200_now > d200_ago * 1.001:
-                    dma200_slope = "up"
-                elif d200_now < d200_ago * 0.999:
-                    dma200_slope = "down"
-                else:
-                    dma200_slope = "flat"
+                dma200_slope = "up" if d200_now > d200_ago * 1.001 else (
+                               "down" if d200_now < d200_ago * 0.999 else "flat")
 
-            # EMA distance % — how far is CMP from 20EMA
             ema_dist_pct = round((cmp - ema20) / ema20 * 100, 2) if ema20 else None
 
-            # Cross detection (price vs 200DMA, 50DMA, 20EMA)
             crosses = []
             for ma_t, ma_p, lbl in [
-                (dma200,   prev_dma200, "200DMA"),
-                (dma50,    prev_dma50,  "50DMA"),
-                (ema20,    prev_ema20,  "20EMA"),
+                (dma200, prev_dma200, "200DMA"),
+                (dma50,  prev_dma50,  "50DMA"),
+                (ema20,  prev_ema20,  "20EMA"),
             ]:
                 c = _detect_cross(cmp, prev_close, ma_t, ma_p, lbl)
                 if c:
                     crosses.append(c)
 
-            # Strategy signal
-            signal = _signal(cmp, ema20, dma50, dma200, dma200_slope, ema_dist_pct)
-
-            result[stock] = {
+            result[key] = {
                 "cmp":          cmp,
                 "ema20":        ema20,
                 "dma50":        dma50,
@@ -200,17 +209,34 @@ def compute_dma_data():
                 "dma200_slope": dma200_slope,
                 "ema_dist_pct": ema_dist_pct,
                 "cross":        ", ".join(crosses) if crosses else "—",
-                "signal":       signal,
-                "stop":         dma50,   # conservative stop = 50DMA
+                "signal":       _signal(cmp, ema20, dma50, dma200, dma200_slope, ema_dist_pct),
+                "stop":         dma50,
             }
         except Exception:
-            result[stock] = {
+            result[key] = {
                 "cmp": None, "ema20": None, "dma50": None, "dma200": None,
                 "dma200_slope": None, "ema_dist_pct": None,
                 "cross": "—", "signal": "—", "stop": None,
             }
-
     return result
+
+
+def compute_dma_data():
+    """Holdings DMA — keyed by portfolio stock name."""
+    holdings = load_holdings()
+    symbol_map = {info["yahoo"]: stock
+                  for stock, info in holdings.items() if info.get("yahoo")}
+    return _compute_dma_for_symbols(symbol_map)
+
+
+def compute_watchlist_dma():
+    """Watchlist DMA — keyed by Yahoo symbol (display name = symbol prefix)."""
+    wl = load_watchlist()
+    if not wl:
+        return {}
+    # key = Yahoo symbol itself so the JS can match it back
+    symbol_map = {sym: sym for sym in wl}
+    return _compute_dma_for_symbols(symbol_map)
 
 
 # ── DMA API route ──────────────────────────────────────────────────────────────
@@ -235,6 +261,50 @@ def api_dma():
     except Exception:
         pass
     return jsonify(data)
+
+
+# ── Watchlist DMA API ─────────────────────────────────────────────────────────
+@app.route("/api/watchlist-dma")
+def api_watchlist_dma():
+    force = request.args.get("force", "0") == "1"
+    if not force and os.path.exists(WL_DMA_CACHE_FILE):
+        try:
+            with open(WL_DMA_CACHE_FILE) as f:
+                cache = json.load(f)
+            cached_at = datetime.fromisoformat(cache.get("fetched_at", "2000-01-01"))
+            if datetime.now() - cached_at < timedelta(hours=4):
+                return jsonify({"data": cache["data"], "symbols": load_watchlist()})
+        except Exception:
+            pass
+    data = compute_watchlist_dma()
+    try:
+        with open(WL_DMA_CACHE_FILE, "w") as f:
+            json.dump({"fetched_at": datetime.now().isoformat(), "data": data}, f, indent=2)
+    except Exception:
+        pass
+    return jsonify({"data": data, "symbols": load_watchlist()})
+
+
+@app.route("/watchlist/add", methods=["POST"])
+def watchlist_add():
+    sym = request.form.get("symbol", "").strip()
+    if not sym:
+        return jsonify({"ok": False, "error": "empty symbol"})
+    wl = load_watchlist()
+    if sym not in wl:
+        wl.append(sym)
+        save_watchlist(wl)
+    return jsonify({"ok": True, "symbols": wl})
+
+
+@app.route("/watchlist/remove", methods=["POST"])
+def watchlist_remove():
+    sym = request.form.get("symbol", "").strip()
+    wl = load_watchlist()
+    if sym in wl:
+        wl.remove(sym)
+        save_watchlist(wl)
+    return jsonify({"ok": True, "symbols": wl})
 
 
 # ── Dashboard route ───────────────────────────────────────────────────────────
@@ -324,6 +394,7 @@ def dashboard():
         stocks=sorted(holdings.keys()),
         last_updated=last_updated,
         fetch_msg=fetch_msg,
+        watchlist=load_watchlist(),
     )
 
 
@@ -555,6 +626,19 @@ HTML = """<!DOCTYPE html>
   .scanner-pill.near{background:#fde8d0;color:#7d3c00}
   .scanner-pill.watch{background:#d6eaf8;color:#154360}
 
+  /* ── Watchlist add bar ── */
+  .wl-add-bar{display:flex;align-items:center;gap:8px;padding:8px 16px;
+              background:#eef0f4;border-bottom:1px solid #dde2ea;flex-wrap:wrap}
+  .wl-sym-input{font-size:.8rem;padding:4px 10px;border:1.5px solid #c0cfe0;border-radius:8px;
+                width:220px;outline:none;font-family:inherit}
+  .wl-sym-input:focus{border-color:#1F3864;box-shadow:0 0 0 2px rgba(31,56,100,.12)}
+  .wl-add-btn{font-size:.8rem;background:#567044;color:#fff;border:none;border-radius:8px;
+              padding:4px 14px;cursor:pointer;font-weight:600;transition:background .15s}
+  .wl-add-btn:hover{background:#455a37}
+  .wl-remove-btn{background:none;border:none;cursor:pointer;color:#c0392b;font-size:.85rem;
+                 padding:2px 4px;border-radius:4px;transition:background .12s}
+  .wl-remove-btn:hover{background:#fce4ec}
+
   .dma-refresh-btn{font-size:.75rem;background:#1F3864;color:#fff;
                    border:1px solid #1F3864;border-radius:12px;padding:3px 12px;
                    cursor:pointer;transition:all .15s;white-space:nowrap;font-weight:500}
@@ -750,6 +834,7 @@ HTML = """<!DOCTYPE html>
       <div class="card-tabs">
         <button class="card-tab active" id="tab-holdings"  onclick="switchHoldingsTab('holdings')">📋 Holdings</button>
         <button class="card-tab"        id="tab-technical" onclick="switchHoldingsTab('technical')">📊 Technical</button>
+        <button class="card-tab"        id="tab-watchlist" onclick="switchHoldingsTab('watchlist')">👁 Watchlist</button>
       </div>
       <span class="fw-normal opacity-75" style="font-size:.78rem" id="filter-label">All {{ rows|length }} stocks</span>
     </div>
@@ -874,6 +959,46 @@ HTML = """<!DOCTYPE html>
         </table>
       </div>
     </div><!-- /technical-panel -->
+
+    <!-- ── WATCHLIST PANEL ── -->
+    <div id="watchlist-panel" style="display:none">
+      <!-- Add stock bar -->
+      <div class="wl-add-bar">
+        <input type="text" id="wl-input" class="wl-sym-input"
+               placeholder="Yahoo symbol e.g. NLCINDIA.NS"
+               onkeydown="if(event.key==='Enter') wlAdd()">
+        <button class="wl-add-btn" onclick="wlAdd()">+ Add</button>
+        <button class="dma-refresh-btn" onclick="loadWatchlistDma(true)" style="margin-left:4px">⟳ Refresh</button>
+        <span id="wl-msg" style="font-size:.75rem;color:#567044;margin-left:4px"></span>
+      </div>
+      <!-- Watchlist table -->
+      <div class="tbl-wrap">
+        <table class="table table-hover table-sm mb-0" id="wl-table">
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th class="r">CMP ₹</th>
+              <th class="r">20 EMA</th>
+              <th class="r">EMA Dist %</th>
+              <th class="r">50 DMA</th>
+              <th class="r">200 DMA</th>
+              <th>200 Slope</th>
+              <th>Cross</th>
+              <th>Signal</th>
+              <th class="r">Stop ₹</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="wl-tbody">
+            {% if watchlist %}
+            <tr><td colspan="11" class="text-center text-muted py-3">⏳ Click tab to load signal data…</td></tr>
+            {% else %}
+            <tr><td colspan="11" class="text-center text-muted py-3">No watchlist stocks yet — add a Yahoo symbol above.</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div><!-- /watchlist-panel -->
 
   </div><!-- /card -->
 
@@ -1355,11 +1480,12 @@ let dmaRows   = [];
 let dmaSortState = { col: null, dir: 1 };
 
 function switchHoldingsTab(tab) {
-  document.getElementById('holdings-panel').style.display  = tab === 'holdings'  ? '' : 'none';
-  document.getElementById('technical-panel').style.display = tab === 'technical' ? '' : 'none';
-  document.getElementById('tab-holdings').classList.toggle('active',  tab === 'holdings');
-  document.getElementById('tab-technical').classList.toggle('active', tab === 'technical');
+  ['holdings','technical','watchlist'].forEach(t => {
+    document.getElementById(t + '-panel').style.display = tab === t ? '' : 'none';
+    document.getElementById('tab-' + t).classList.toggle('active', tab === t);
+  });
   if (tab === 'technical' && !dmaLoaded) loadDmaData(false);
+  if (tab === 'watchlist' && !wlLoaded)  loadWatchlistDma(false);
 }
 
 // ── DMA / Signal helpers ───────────────────────────────────────────────────
@@ -1545,6 +1671,82 @@ function loadScanner() {
     .catch(() => {
       document.getElementById('scanner-tbody').innerHTML =
         '<tr><td colspan="9" class="text-center text-muted py-3">Could not load signal data</td></tr>';
+    });
+}
+
+// ── Watchlist ──────────────────────────────────────────────────────────────
+let wlLoaded   = false;
+let wlSymbols  = {{ watchlist | tojson }};  // server-rendered current list
+
+function loadWatchlistDma(force) {
+  const tbody = document.getElementById('wl-tbody');
+  tbody.innerHTML = '<tr><td colspan="11" class="dma-loading">⏳ Fetching 1yr data for watchlist…</td></tr>';
+  const url = '/api/watchlist-dma' + (force ? '?force=1' : '');
+  fetch(url)
+    .then(r => r.json())
+    .then(resp => {
+      wlLoaded  = true;
+      wlSymbols = resp.symbols || [];
+      renderWatchlistTable(resp.data || {}, wlSymbols);
+    })
+    .catch(err => {
+      tbody.innerHTML = `<tr><td colspan="11" class="dma-loading text-danger">Error: ${err}</td></tr>`;
+    });
+}
+
+function renderWatchlistTable(data, symbols) {
+  const tbody = document.getElementById('wl-tbody');
+  if (!symbols || !symbols.length) {
+    tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted py-3">No watchlist stocks — add a Yahoo symbol above.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = symbols.map(sym => {
+    const d = data[sym] || {};
+    const name = sym.replace(/\.(NS|BO)$/i, '');
+    return `
+    <tr>
+      <td class="fw-bold">${name}<br><span style="font-size:.7rem;color:#888;font-weight:400">${sym}</span></td>
+      <td class="r">${fmt(d.cmp)}</td>
+      <td class="r ${dmaClass(d.cmp, d.ema20)}">${fmt(d.ema20)}</td>
+      <td class="r">${distHtml(d.ema_dist_pct)}</td>
+      <td class="r ${dmaClass(d.cmp, d.dma50)}">${fmt(d.dma50)}</td>
+      <td class="r ${dmaClass(d.cmp, d.dma200)}">${fmt(d.dma200)}</td>
+      <td>${slopeHtml(d.dma200_slope)}</td>
+      <td>${crossHtml(d.cross)}</td>
+      <td>${signalHtml(d.signal)}</td>
+      <td class="r" style="color:#888">${fmt(d.stop)}</td>
+      <td><button class="wl-remove-btn" title="Remove ${sym}" onclick="wlRemove('${sym}')">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function wlAdd() {
+  const inp = document.getElementById('wl-input');
+  const sym = inp.value.trim();
+  if (!sym) return;
+  const msg = document.getElementById('wl-msg');
+  msg.textContent = 'Adding…';
+  fetch('/watchlist/add', { method: 'POST', body: new URLSearchParams({ symbol: sym }) })
+    .then(r => r.json())
+    .then(resp => {
+      if (resp.ok) {
+        wlSymbols = resp.symbols;
+        inp.value = '';
+        msg.textContent = '✓ Added — refreshing…';
+        setTimeout(() => { msg.textContent = ''; }, 3000);
+        loadWatchlistDma(true);  // force-refresh so new symbol gets fetched
+      }
+    })
+    .catch(() => { msg.textContent = 'Error adding'; });
+}
+
+function wlRemove(sym) {
+  if (!confirm('Remove ' + sym + ' from watchlist?')) return;
+  fetch('/watchlist/remove', { method: 'POST', body: new URLSearchParams({ symbol: sym }) })
+    .then(r => r.json())
+    .then(resp => {
+      wlSymbols = resp.symbols;
+      loadWatchlistDma(true);
     });
 }
 
