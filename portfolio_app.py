@@ -992,17 +992,17 @@ HTML = """<!DOCTYPE html>
         <table class="table table-hover table-sm mb-0" id="wl-table">
           <thead>
             <tr>
-              <th>Symbol</th>
-              <th class="r">CMP ₹</th>
-              <th class="r">20 EMA</th>
-              <th class="r">EMA Dist %</th>
-              <th class="r">RSI 14</th>
-              <th class="r">50 DMA</th>
-              <th class="r">200 DMA</th>
-              <th>200 Slope</th>
-              <th>Cross</th>
-              <th>Signal</th>
-              <th class="r">Stop ₹</th>
+              <th class="sortable" onclick="sortWlTable('symbol')">Symbol <span class="si"></span></th>
+              <th class="r sortable" onclick="sortWlTable('cmp')">CMP ₹ <span class="si"></span></th>
+              <th class="r sortable" onclick="sortWlTable('ema20')">20 EMA <span class="si"></span></th>
+              <th class="r sortable" onclick="sortWlTable('ema_dist_pct')">EMA Dist % <span class="si"></span></th>
+              <th class="r sortable" onclick="sortWlTable('rsi14')">RSI 14 <span class="si"></span></th>
+              <th class="r sortable" onclick="sortWlTable('dma50')">50 DMA <span class="si"></span></th>
+              <th class="r sortable" onclick="sortWlTable('dma200')">200 DMA <span class="si"></span></th>
+              <th class="sortable" onclick="sortWlTable('dma200_slope')">200 Slope <span class="si"></span></th>
+              <th class="sortable" onclick="sortWlTable('cross')">Cross <span class="si"></span></th>
+              <th class="sortable" onclick="sortWlTable('signal')">Signal <span class="si"></span></th>
+              <th class="r sortable" onclick="sortWlTable('stop')">Stop ₹ <span class="si"></span></th>
               <th></th>
             </tr>
           </thead>
@@ -1702,50 +1702,96 @@ function loadScanner() {
 }
 
 // ── Watchlist ──────────────────────────────────────────────────────────────
-let wlLoaded   = false;
-let wlSymbols  = {{ watchlist | tojson }};  // server-rendered current list
+let wlLoaded    = false;
+let wlSymbols   = {{ watchlist | tojson }};
+let wlRows      = [];   // flat row objects for sorting
+let wlSortState = { col: null, dir: 1 };
 
 function loadWatchlistDma(force) {
   const tbody = document.getElementById('wl-tbody');
-  tbody.innerHTML = '<tr><td colspan="11" class="dma-loading">⏳ Fetching 1yr data for watchlist…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="12" class="dma-loading">⏳ Fetching 1yr data for watchlist…</td></tr>';
   const url = '/api/watchlist-dma' + (force ? '?force=1' : '');
   fetch(url)
     .then(r => r.json())
     .then(resp => {
       wlLoaded  = true;
       wlSymbols = resp.symbols || [];
-      renderWatchlistTable(resp.data || {}, wlSymbols);
+      wlRows    = buildWlRows(resp.data || {}, wlSymbols);
+      renderWlRows(wlRows);
     })
     .catch(err => {
-      tbody.innerHTML = `<tr><td colspan="11" class="dma-loading text-danger">Error: ${err}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="12" class="dma-loading text-danger">Error: ${err}</td></tr>`;
     });
 }
 
-function renderWatchlistTable(data, symbols) {
+function buildWlRows(data, symbols) {
+  return (symbols || []).map(sym => {
+    const d = data[sym] || {};
+    return {
+      symbol:       sym,
+      cmp:          d.cmp          ?? null,
+      ema20:        d.ema20        ?? null,
+      ema_dist_pct: d.ema_dist_pct ?? null,
+      rsi14:        d.rsi14        ?? null,
+      dma50:        d.dma50        ?? null,
+      dma200:       d.dma200       ?? null,
+      dma200_slope: d.dma200_slope ?? null,
+      cross:        d.cross        ?? '—',
+      signal:       d.signal       ?? '—',
+      stop:         d.stop         ?? null,
+    };
+  });
+}
+
+function renderWlRows(rows) {
   const tbody = document.getElementById('wl-tbody');
-  if (!symbols || !symbols.length) {
-    tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted py-3">No watchlist stocks — add a Yahoo symbol above.</td></tr>';
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="12" class="text-center text-muted py-3">No watchlist stocks — add a Yahoo symbol above.</td></tr>';
     return;
   }
-  tbody.innerHTML = symbols.map(sym => {
-    const d = data[sym] || {};
-    const name = sym.replace(/\.(NS|BO)$/i, '');
+  tbody.innerHTML = rows.map(r => {
+    const name = r.symbol.replace(/\.(NS|BO)$/i, '');
     return `
     <tr>
-      <td class="fw-bold">${name}<br><span style="font-size:.7rem;color:#888;font-weight:400">${sym}</span></td>
-      <td class="r">${fmt(d.cmp)}</td>
-      <td class="r ${dmaClass(d.cmp, d.ema20)}">${fmt(d.ema20)}</td>
-      <td class="r">${distHtml(d.ema_dist_pct)}</td>
-      <td class="r">${rsiHtml(d.rsi14)}</td>
-      <td class="r ${dmaClass(d.cmp, d.dma50)}">${fmt(d.dma50)}</td>
-      <td class="r ${dmaClass(d.cmp, d.dma200)}">${fmt(d.dma200)}</td>
-      <td>${slopeHtml(d.dma200_slope)}</td>
-      <td>${crossHtml(d.cross)}</td>
-      <td>${signalHtml(d.signal)}</td>
-      <td class="r" style="color:#888">${fmt(d.stop)}</td>
-      <td><button class="wl-remove-btn" title="Remove ${sym}" onclick="wlRemove('${sym}')">✕</button></td>
+      <td class="fw-bold">${name}<br><span style="font-size:.7rem;color:#888;font-weight:400">${r.symbol}</span></td>
+      <td class="r">${fmt(r.cmp)}</td>
+      <td class="r ${dmaClass(r.cmp, r.ema20)}">${fmt(r.ema20)}</td>
+      <td class="r">${distHtml(r.ema_dist_pct)}</td>
+      <td class="r">${rsiHtml(r.rsi14)}</td>
+      <td class="r ${dmaClass(r.cmp, r.dma50)}">${fmt(r.dma50)}</td>
+      <td class="r ${dmaClass(r.cmp, r.dma200)}">${fmt(r.dma200)}</td>
+      <td>${slopeHtml(r.dma200_slope)}</td>
+      <td>${crossHtml(r.cross)}</td>
+      <td>${signalHtml(r.signal)}</td>
+      <td class="r" style="color:#888">${fmt(r.stop)}</td>
+      <td><button class="wl-remove-btn" title="Remove ${r.symbol}" onclick="wlRemove('${r.symbol}')">✕</button></td>
     </tr>`;
   }).join('');
+}
+
+function sortWlTable(col) {
+  wlSortState.dir = (wlSortState.col === col) ? -wlSortState.dir : 1;
+  wlSortState.col = col;
+  document.querySelectorAll('#wl-table th.sortable').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (th.getAttribute('onclick') === `sortWlTable('${col}')`)
+      th.classList.add(wlSortState.dir === 1 ? 'sort-asc' : 'sort-desc');
+  });
+  const sorted = [...wlRows].sort((a, b) => {
+    let va = a[col], vb = b[col];
+    if (col === 'signal') { va = SIGNAL_ORDER[va]??9; vb = SIGNAL_ORDER[vb]??9; }
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1; if (vb == null) return -1;
+    if (typeof va === 'string') return wlSortState.dir * va.localeCompare(vb);
+    return wlSortState.dir * (va - vb);
+  });
+  renderWlRows(sorted);
+}
+
+// Legacy wrapper kept for compatibility
+function renderWatchlistTable(data, symbols) {
+  wlRows = buildWlRows(data, symbols);
+  renderWlRows(wlRows);
 }
 
 function wlAdd() {
