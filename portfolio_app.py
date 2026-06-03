@@ -191,6 +191,16 @@ def _compute_dma_for_symbols(symbol_map):
 
             ema_dist_pct = round((cmp - ema20) / ema20 * 100, 2) if ema20 else None
 
+            # RSI(14) — Wilder smoothing (same series, no extra API call)
+            rsi14 = None
+            if len(series) >= 15:
+                delta    = series.diff()
+                avg_gain = delta.clip(lower=0).ewm(alpha=1/14, min_periods=14, adjust=False).mean()
+                avg_loss = (-delta.clip(upper=0)).ewm(alpha=1/14, min_periods=14, adjust=False).mean()
+                rs       = avg_gain / avg_loss.replace(0, float('nan'))
+                rsi_ser  = 100 - (100 / (1 + rs))
+                rsi14    = round(float(rsi_ser.iloc[-1]), 1) if not rsi_ser.empty else None
+
             crosses = []
             for ma_t, ma_p, lbl in [
                 (dma200, prev_dma200, "200DMA"),
@@ -208,6 +218,7 @@ def _compute_dma_for_symbols(symbol_map):
                 "dma200":       dma200,
                 "dma200_slope": dma200_slope,
                 "ema_dist_pct": ema_dist_pct,
+                "rsi14":        rsi14,
                 "cross":        ", ".join(crosses) if crosses else "—",
                 "signal":       _signal(cmp, ema20, dma50, dma200, dma200_slope, ema_dist_pct),
                 "stop":         dma50,
@@ -215,7 +226,7 @@ def _compute_dma_for_symbols(symbol_map):
         except Exception:
             result[key] = {
                 "cmp": None, "ema20": None, "dma50": None, "dma200": None,
-                "dma200_slope": None, "ema_dist_pct": None,
+                "dma200_slope": None, "ema_dist_pct": None, "rsi14": None,
                 "cross": "—", "signal": "—", "stop": None,
             }
     return result
@@ -616,6 +627,9 @@ HTML = """<!DOCTYPE html>
   .slope-up  {color:#1c8c44;font-weight:700}
   .slope-dn  {color:#c0392b;font-weight:700}
   .slope-flat{color:#8a6800;font-weight:600}
+  .rsi-os {color:#1c8c44;font-weight:700}   /* oversold  <30  — bullish */
+  .rsi-ob {color:#c0392b;font-weight:700}   /* overbought>70  — bearish */
+  .rsi-neu{color:#555;font-weight:500}      /* neutral 30-70 */
 
   /* ── Signal Scanner card ── */
   .scanner-summary-bar{display:flex;gap:10px;padding:8px 16px;background:#eef0f4;
@@ -792,6 +806,7 @@ HTML = """<!DOCTYPE html>
             <th class="r">CMP ₹</th>
             <th class="r">20 EMA</th>
             <th class="r">EMA Dist %</th>
+            <th class="r">RSI 14</th>
             <th class="r">50 DMA</th>
             <th class="r">200 DMA</th>
             <th>200 Slope</th>
@@ -800,7 +815,7 @@ HTML = """<!DOCTYPE html>
           </tr>
         </thead>
         <tbody id="scanner-tbody">
-          <tr><td colspan="9" class="text-center text-muted py-3">⏳ Fetching data…</td></tr>
+          <tr><td colspan="10" class="text-center text-muted py-3">⏳ Fetching data…</td></tr>
         </tbody>
       </table>
     </div>
@@ -945,6 +960,7 @@ HTML = """<!DOCTYPE html>
               <th class="r sortable" onclick="sortDmaTable('cmp')">CMP ₹ <span class="si"></span></th>
               <th class="r sortable" onclick="sortDmaTable('ema20')">20 EMA <span class="si"></span></th>
               <th class="r sortable" onclick="sortDmaTable('ema_dist_pct')">EMA Dist % <span class="si"></span></th>
+              <th class="r sortable" onclick="sortDmaTable('rsi14')">RSI 14 <span class="si"></span></th>
               <th class="r sortable" onclick="sortDmaTable('dma50')">50 DMA <span class="si"></span></th>
               <th class="r sortable" onclick="sortDmaTable('dma200')">200 DMA <span class="si"></span></th>
               <th class="sortable" onclick="sortDmaTable('dma200_slope')">200 Slope <span class="si"></span></th>
@@ -980,6 +996,7 @@ HTML = """<!DOCTYPE html>
               <th class="r">CMP ₹</th>
               <th class="r">20 EMA</th>
               <th class="r">EMA Dist %</th>
+              <th class="r">RSI 14</th>
               <th class="r">50 DMA</th>
               <th class="r">200 DMA</th>
               <th>200 Slope</th>
@@ -1523,6 +1540,7 @@ function buildDmaRows(data) {
         dma200:        d.dma200        ?? null,
         dma200_slope:  d.dma200_slope  ?? null,
         ema_dist_pct:  d.ema_dist_pct  ?? null,
+        rsi14:         d.rsi14         ?? null,
         cross:         d.cross         ?? '—',
         signal:        d.signal        ?? '—',
         stop:          d.stop          ?? null,
@@ -1571,6 +1589,13 @@ function distHtml(v) {
   return `<span class="${cls}">${sign}${v.toFixed(2)}%</span>`;
 }
 
+function rsiHtml(v) {
+  if (v == null) return '<span style="color:#aaa">—</span>';
+  const cls = v < 30 ? 'rsi-os' : v > 70 ? 'rsi-ob' : 'rsi-neu';
+  const tag = v < 30 ? ' ▲OS' : v > 70 ? ' ▼OB' : '';
+  return `<span class="${cls}">${v.toFixed(1)}${tag}</span>`;
+}
+
 function fmt(v) {
   if (v == null) return '<span style="color:#aaa">—</span>';
   return '₹' + v.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
@@ -1588,6 +1613,7 @@ function renderDmaTable(rows) {
       <td class="r">${fmt(r.cmp)}</td>
       <td class="r ${dmaClass(r.cmp, r.ema20)}">${fmt(r.ema20)}</td>
       <td class="r">${distHtml(r.ema_dist_pct)}</td>
+      <td class="r">${rsiHtml(r.rsi14)}</td>
       <td class="r ${dmaClass(r.cmp, r.dma50)}">${fmt(r.dma50)}</td>
       <td class="r ${dmaClass(r.cmp, r.dma200)}">${fmt(r.dma200)}</td>
       <td>${slopeHtml(r.dma200_slope)}</td>
@@ -1641,7 +1667,7 @@ function renderScanner(data) {
 
   const tbody = document.getElementById('scanner-tbody');
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">No actionable setups right now</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-3">No actionable setups right now</td></tr>';
     return;
   }
   tbody.innerHTML = rows.map(r => `
@@ -1650,6 +1676,7 @@ function renderScanner(data) {
       <td class="r">${fmt(r.cmp)}</td>
       <td class="r ${dmaClass(r.cmp, r.ema20)}">${fmt(r.ema20)}</td>
       <td class="r">${distHtml(r.ema_dist_pct)}</td>
+      <td class="r">${rsiHtml(r.rsi14)}</td>
       <td class="r ${dmaClass(r.cmp, r.dma50)}">${fmt(r.dma50)}</td>
       <td class="r ${dmaClass(r.cmp, r.dma200)}">${fmt(r.dma200)}</td>
       <td>${slopeHtml(r.dma200_slope)}</td>
@@ -1709,6 +1736,7 @@ function renderWatchlistTable(data, symbols) {
       <td class="r">${fmt(d.cmp)}</td>
       <td class="r ${dmaClass(d.cmp, d.ema20)}">${fmt(d.ema20)}</td>
       <td class="r">${distHtml(d.ema_dist_pct)}</td>
+      <td class="r">${rsiHtml(d.rsi14)}</td>
       <td class="r ${dmaClass(d.cmp, d.dma50)}">${fmt(d.dma50)}</td>
       <td class="r ${dmaClass(d.cmp, d.dma200)}">${fmt(d.dma200)}</td>
       <td>${slopeHtml(d.dma200_slope)}</td>
