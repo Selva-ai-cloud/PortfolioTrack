@@ -84,24 +84,40 @@ def _detect_cross(cmp, prev_close, dma_today, dma_prev, label):
     return None
 
 
-def _b_state(cmp, dma20, dma50, dma200):
-    """Classify bullish/bearish state based on CMP vs DMAs."""
-    valid = [(cmp > d, d is not None) for d in [dma200, dma50, dma20] if d is not None]
-    if not valid:
+def _signal(cmp, ema20, dma50, dma200, dma200_slope, ema_dist_pct):
+    """
+    Strategy signal using 200DMA (trend), 50DMA (strength), 20EMA (entry timing).
+      Avoid      — price below 200DMA (bear territory)
+      Caution    — trend broken: 50DMA < 200DMA or price well below 20EMA
+      Watch      — trend bullish but price far above 20EMA; wait for pullback
+      Near Entry — trend bullish, price pulling back toward 20EMA (2–8% above)
+      Buy Setup  — trend confirmed + price at/near 20EMA bounce zone
+    """
+    if any(v is None for v in [cmp, ema20, dma50, dma200]):
         return "—"
-    above = sum(1 for ok, _ in valid if ok)
-    total = len(valid)
-    if above == total:
-        return "Bullish"
-    if above == 0:
-        return "Bearish"
-    if above >= total // 2 + 1:
-        return "Mostly Bullish"
-    return "Mostly Bearish"
+    if cmp < dma200:
+        return "Avoid"
+    if dma50 < dma200:
+        return "Caution"
+    # Trend: both 50DMA > 200DMA (already checked) + 200DMA sloping up
+    trend_confirmed = (dma200_slope == "up")
+    if ema_dist_pct is None:
+        return "Watch"
+    # Price has broken down well below 20EMA
+    if ema_dist_pct < -3:
+        return "Caution"
+    # At/near 20EMA — prime entry zone
+    if -3 <= ema_dist_pct <= 2:
+        return "Buy Setup" if trend_confirmed else "Near Entry"
+    # Pulling back toward EMA (2–8% above it)
+    if 2 < ema_dist_pct <= 8:
+        return "Near Entry" if trend_confirmed else "Watch"
+    # Far above EMA (>8%) — wait for pullback
+    return "Watch"
 
 
 def compute_dma_data():
-    """Fetch 1yr price history for all holdings, compute 20/50/200 DMA + crossovers."""
+    """Fetch 1yr price history, compute 20EMA / 50DMA / 200DMA + strategy signals."""
     holdings = load_holdings()
     symbol_map = {info["yahoo"]: stock
                   for stock, info in holdings.items() if info.get("yahoo")}
@@ -131,41 +147,68 @@ def compute_dma_data():
             if len(series) < 2:
                 raise ValueError("insufficient data")
 
-            cmp       = round(float(series.iloc[-1]), 2)
+            cmp        = round(float(series.iloc[-1]), 2)
             prev_close = round(float(series.iloc[-2]), 2)
 
-            # Today's DMAs
-            dma20  = round(float(series.iloc[-20:].mean()),   2) if len(series) >= 20  else None
-            dma50  = round(float(series.iloc[-50:].mean()),   2) if len(series) >= 50  else None
-            dma200 = round(float(series.iloc[-200:].mean()),  2) if len(series) >= 200 else None
+            # 20 EMA (exponential — faster, better entry signal)
+            ema_series  = series.ewm(span=20, adjust=False).mean()
+            ema20       = round(float(ema_series.iloc[-1]), 2)
+            prev_ema20  = round(float(ema_series.iloc[-2]), 2)
 
-            # Previous day's DMAs (shift window back by 1)
-            prev_dma20  = round(float(series.iloc[-21:-1].mean()), 2) if len(series) >= 21  else None
+            # 50 & 200 SMA
+            dma50  = round(float(series.iloc[-50:].mean()),  2) if len(series) >= 50  else None
+            dma200 = round(float(series.iloc[-200:].mean()), 2) if len(series) >= 200 else None
+
+            # Previous day's DMAs
             prev_dma50  = round(float(series.iloc[-51:-1].mean()), 2) if len(series) >= 51  else None
             prev_dma200 = round(float(series.iloc[-201:-1].mean()),2) if len(series) >= 201 else None
 
-            # Crossover detection — most significant wins (200 > 50 > 20)
+            # 200DMA slope — compare today vs ~20 trading days ago
+            dma200_slope = None
+            if len(series) >= 220:
+                d200_now = float(series.iloc[-200:].mean())
+                d200_ago = float(series.iloc[-220:-20].mean())
+                if d200_now > d200_ago * 1.001:
+                    dma200_slope = "up"
+                elif d200_now < d200_ago * 0.999:
+                    dma200_slope = "down"
+                else:
+                    dma200_slope = "flat"
+
+            # EMA distance % — how far is CMP from 20EMA
+            ema_dist_pct = round((cmp - ema20) / ema20 * 100, 2) if ema20 else None
+
+            # Cross detection (price vs 200DMA, 50DMA, 20EMA)
             crosses = []
-            for dma_t, dma_p, lbl in [
-                (dma200, prev_dma200, "200DMA"),
-                (dma50,  prev_dma50,  "50DMA"),
-                (dma20,  prev_dma20,  "20DMA"),
+            for ma_t, ma_p, lbl in [
+                (dma200,   prev_dma200, "200DMA"),
+                (dma50,    prev_dma50,  "50DMA"),
+                (ema20,    prev_ema20,  "20EMA"),
             ]:
-                c = _detect_cross(cmp, prev_close, dma_t, dma_p, lbl)
+                c = _detect_cross(cmp, prev_close, ma_t, ma_p, lbl)
                 if c:
                     crosses.append(c)
 
+            # Strategy signal
+            signal = _signal(cmp, ema20, dma50, dma200, dma200_slope, ema_dist_pct)
+
             result[stock] = {
-                "cmp":    cmp,
-                "dma20":  dma20,
-                "dma50":  dma50,
-                "dma200": dma200,
-                "cross":  ", ".join(crosses) if crosses else "—",
-                "b_state": _b_state(cmp, dma20, dma50, dma200),
+                "cmp":          cmp,
+                "ema20":        ema20,
+                "dma50":        dma50,
+                "dma200":       dma200,
+                "dma200_slope": dma200_slope,
+                "ema_dist_pct": ema_dist_pct,
+                "cross":        ", ".join(crosses) if crosses else "—",
+                "signal":       signal,
+                "stop":         dma50,   # conservative stop = 50DMA
             }
         except Exception:
-            result[stock] = {"cmp": None, "dma20": None, "dma50": None,
-                             "dma200": None, "cross": "—", "b_state": "—"}
+            result[stock] = {
+                "cmp": None, "ema20": None, "dma50": None, "dma200": None,
+                "dma200_slope": None, "ema_dist_pct": None,
+                "cross": "—", "signal": "—", "stop": None,
+            }
 
     return result
 
@@ -493,6 +536,25 @@ HTML = """<!DOCTYPE html>
   .badge-neu{background:#FFEB9C;color:#7d6608;padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:600;white-space:nowrap}
   .cross-up{color:#1c8c44;font-weight:700}
   .cross-dn{color:#c0392b;font-weight:700}
+  /* ── Signal badges ── */
+  .sig-buy  {background:#1c8c44;color:#fff;padding:2px 9px;border-radius:10px;font-size:.74rem;font-weight:700;white-space:nowrap}
+  .sig-near {background:#e67e22;color:#fff;padding:2px 9px;border-radius:10px;font-size:.74rem;font-weight:700;white-space:nowrap}
+  .sig-watch{background:#2980b9;color:#fff;padding:2px 9px;border-radius:10px;font-size:.74rem;font-weight:600;white-space:nowrap}
+  .sig-caut {background:#c0392b;color:#fff;padding:2px 9px;border-radius:10px;font-size:.74rem;font-weight:600;white-space:nowrap}
+  .sig-avoid{background:#7f8c8d;color:#fff;padding:2px 9px;border-radius:10px;font-size:.74rem;font-weight:600;white-space:nowrap}
+  .slope-up  {color:#1c8c44;font-weight:700}
+  .slope-dn  {color:#c0392b;font-weight:700}
+  .slope-flat{color:#8a6800;font-weight:600}
+
+  /* ── Signal Scanner card ── */
+  .scanner-summary-bar{display:flex;gap:10px;padding:8px 16px;background:#eef0f4;
+                       border-bottom:1px solid #dde2ea;flex-wrap:wrap;align-items:center}
+  .scanner-pill{display:inline-flex;align-items:center;gap:5px;font-size:.76rem;
+                padding:3px 10px;border-radius:12px;font-weight:600}
+  .scanner-pill.buy {background:#d4edda;color:#1c5e2e}
+  .scanner-pill.near{background:#fde8d0;color:#7d3c00}
+  .scanner-pill.watch{background:#d6eaf8;color:#154360}
+
   .dma-refresh-btn{font-size:.75rem;background:#1F3864;color:#fff;
                    border:1px solid #1F3864;border-radius:12px;padding:3px 12px;
                    cursor:pointer;transition:all .15s;white-space:nowrap;font-weight:500}
@@ -626,6 +688,37 @@ HTML = """<!DOCTYPE html>
           </table>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Signal Scanner -->
+  <div class="card mb-3" id="scanner-card">
+    <div class="card-hdr d-flex align-items-center justify-content-between">
+      <span>🎯 Signal Scanner — 20EMA / 50DMA / 200DMA Strategy</span>
+      <span id="scanner-ts" style="font-size:.72rem;opacity:.7"></span>
+    </div>
+    <div class="scanner-summary-bar" id="scanner-pills">
+      <span style="font-size:.78rem;color:#555">Loading signals…</span>
+    </div>
+    <div class="tbl-wrap" style="max-height:320px">
+      <table class="table table-hover table-sm mb-0" id="scanner-table">
+        <thead>
+          <tr>
+            <th>Stock</th>
+            <th class="r">CMP ₹</th>
+            <th class="r">20 EMA</th>
+            <th class="r">EMA Dist %</th>
+            <th class="r">50 DMA</th>
+            <th class="r">200 DMA</th>
+            <th>200 Slope</th>
+            <th class="r">Stop ₹</th>
+            <th>Signal</th>
+          </tr>
+        </thead>
+        <tbody id="scanner-tbody">
+          <tr><td colspan="9" class="text-center text-muted py-3">⏳ Fetching data…</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -765,11 +858,14 @@ HTML = """<!DOCTYPE html>
             <tr>
               <th class="sortable" onclick="sortDmaTable('stock')">Stock <span class="si"></span></th>
               <th class="r sortable" onclick="sortDmaTable('cmp')">CMP ₹ <span class="si"></span></th>
-              <th class="r sortable" onclick="sortDmaTable('dma20')">20 DMA <span class="si"></span></th>
+              <th class="r sortable" onclick="sortDmaTable('ema20')">20 EMA <span class="si"></span></th>
+              <th class="r sortable" onclick="sortDmaTable('ema_dist_pct')">EMA Dist % <span class="si"></span></th>
               <th class="r sortable" onclick="sortDmaTable('dma50')">50 DMA <span class="si"></span></th>
               <th class="r sortable" onclick="sortDmaTable('dma200')">200 DMA <span class="si"></span></th>
+              <th class="sortable" onclick="sortDmaTable('dma200_slope')">200 Slope <span class="si"></span></th>
               <th class="sortable" onclick="sortDmaTable('cross')">Cross <span class="si"></span></th>
-              <th class="sortable" onclick="sortDmaTable('b_state')">B-State <span class="si"></span></th>
+              <th class="sortable" onclick="sortDmaTable('signal')">Signal <span class="si"></span></th>
+              <th class="r sortable" onclick="sortDmaTable('stop')">Stop ₹ <span class="si"></span></th>
             </tr>
           </thead>
           <tbody id="dma-tbody">
@@ -1221,12 +1317,11 @@ function applyFilter(broker) {
   // 8. Re-apply sort if active
   if (sortState.col) sortTable(sortState.col);
 
-  // 9. Rebuild DMA table rows for new broker scope (if already loaded)
+  // 9. Rebuild DMA table + scanner for new broker scope
+  if (_scannerCache) renderScanner(_scannerCache);
   if (dmaLoaded) {
-    fetch('/api/dma').then(r => r.json()).then(data => {
-      dmaRows = buildDmaRows(data);
-      renderDmaTable(dmaRows);
-    });
+    dmaRows = buildDmaRows(_scannerCache || {});
+    renderDmaTable(dmaRows);
   }
 }
 
@@ -1234,6 +1329,7 @@ function applyFilter(broker) {
 renderChart(stocks);
 renderHeroSummary('All');
 renderAllTimeMovers(allRows);
+loadScanner();
 
 // ── Delete confirmation ────────────────────────────────────────────────────
 function confirmDelete(btn, stock) {
@@ -1266,53 +1362,72 @@ function switchHoldingsTab(tab) {
   if (tab === 'technical' && !dmaLoaded) loadDmaData(false);
 }
 
+// ── DMA / Signal helpers ───────────────────────────────────────────────────
+const SIGNAL_ORDER = {'Buy Setup':0,'Near Entry':1,'Watch':2,'Caution':3,'Avoid':4,'—':5};
+
 function loadDmaData(force) {
   const tbody = document.getElementById('dma-tbody');
-  tbody.innerHTML = '<tr><td colspan="7" class="dma-loading">⏳ Fetching 1yr price history &amp; computing DMAs…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="10" class="dma-loading">⏳ Fetching 1yr price history &amp; computing signals…</td></tr>';
   const url = '/api/dma' + (force ? '?force=1' : '');
   fetch(url)
     .then(r => r.json())
     .then(data => {
       dmaLoaded = true;
+      _scannerCache = data;
       dmaRows = buildDmaRows(data);
       renderDmaTable(dmaRows);
+      renderScanner(data);
     })
     .catch(err => {
-      tbody.innerHTML = '<tr><td colspan="7" class="dma-loading text-danger">Error: ' + err + '</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="dma-loading text-danger">Error: ' + err + '</td></tr>';
     });
 }
 
 function buildDmaRows(data) {
-  // Merge with allRows to respect active broker filter
   return allRows
     .filter(r => activeBroker === 'All' || r.broker === activeBroker)
     .map(r => {
       const d = data[r.stock] || {};
       return {
-        stock:   r.stock,
-        broker:  r.broker,
-        cmp:     d.cmp    ?? null,
-        dma20:   d.dma20  ?? null,
-        dma50:   d.dma50  ?? null,
-        dma200:  d.dma200 ?? null,
-        cross:   d.cross  ?? '—',
-        b_state: d.b_state ?? '—',
+        stock:         r.stock,
+        broker:        r.broker,
+        cmp:           d.cmp           ?? null,
+        ema20:         d.ema20         ?? null,
+        dma50:         d.dma50         ?? null,
+        dma200:        d.dma200        ?? null,
+        dma200_slope:  d.dma200_slope  ?? null,
+        ema_dist_pct:  d.ema_dist_pct  ?? null,
+        cross:         d.cross         ?? '—',
+        signal:        d.signal        ?? '—',
+        stop:          d.stop          ?? null,
       };
     });
 }
 
-function dmaClass(cmp, dma) {
-  if (cmp == null || dma == null) return '';
-  return cmp > dma ? 'dma-above' : 'dma-below';
+function dmaClass(cmp, ma) {
+  if (cmp == null || ma == null) return '';
+  return cmp > ma ? 'dma-above' : 'dma-below';
 }
 
-function bStateHtml(s) {
-  if (s === 'Bullish')        return '<span class="badge-bull">▲ Bullish</span>';
-  if (s === 'Bearish')        return '<span class="badge-bear">▼ Bearish</span>';
-  if (s === 'Mostly Bullish') return '<span class="badge-mbull">↑ Mostly Bullish</span>';
-  if (s === 'Mostly Bearish') return '<span class="badge-mbear">↓ Mostly Bearish</span>';
-  if (s === 'Neutral')        return '<span class="badge-neu">~ Neutral</span>';
-  return s;
+function slopeHtml(s) {
+  if (s === 'up')   return '<span class="slope-up">↑ Up</span>';
+  if (s === 'down') return '<span class="slope-dn">↓ Down</span>';
+  if (s === 'flat') return '<span class="slope-flat">→ Flat</span>';
+  return '<span style="color:#aaa">—</span>';
+}
+
+function signalHtml(s) {
+  const map = {
+    'Buy Setup':  'sig-buy',
+    'Near Entry': 'sig-near',
+    'Watch':      'sig-watch',
+    'Caution':    'sig-caut',
+    'Avoid':      'sig-avoid',
+  };
+  const cls = map[s] || '';
+  if (!cls) return '<span style="color:#aaa">—</span>';
+  const icon = s === 'Buy Setup' ? '🟢 ' : s === 'Near Entry' ? '🟠 ' : s === 'Watch' ? '👀 ' : s === 'Caution' ? '🔴 ' : '⚫ ';
+  return `<span class="${cls}">${icon}${s}</span>`;
 }
 
 function crossHtml(c) {
@@ -1323,6 +1438,13 @@ function crossHtml(c) {
   }).join(' ');
 }
 
+function distHtml(v) {
+  if (v == null) return '<span style="color:#aaa">—</span>';
+  const cls = v > 0 ? 'dma-above' : v < -1 ? 'dma-below' : 'dma-neutral';
+  const sign = v > 0 ? '+' : '';
+  return `<span class="${cls}">${sign}${v.toFixed(2)}%</span>`;
+}
+
 function fmt(v) {
   if (v == null) return '<span style="color:#aaa">—</span>';
   return '₹' + v.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
@@ -1331,45 +1453,99 @@ function fmt(v) {
 function renderDmaTable(rows) {
   const tbody = document.getElementById('dma-tbody');
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="dma-loading">No data</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="dma-loading">No data</td></tr>';
     return;
   }
   tbody.innerHTML = rows.map(r => `
     <tr data-broker="${r.broker}">
       <td class="fw-bold">${r.stock}</td>
       <td class="r">${fmt(r.cmp)}</td>
-      <td class="r ${dmaClass(r.cmp, r.dma20)}">${fmt(r.dma20)}</td>
+      <td class="r ${dmaClass(r.cmp, r.ema20)}">${fmt(r.ema20)}</td>
+      <td class="r">${distHtml(r.ema_dist_pct)}</td>
       <td class="r ${dmaClass(r.cmp, r.dma50)}">${fmt(r.dma50)}</td>
       <td class="r ${dmaClass(r.cmp, r.dma200)}">${fmt(r.dma200)}</td>
+      <td>${slopeHtml(r.dma200_slope)}</td>
       <td>${crossHtml(r.cross)}</td>
-      <td>${bStateHtml(r.b_state)}</td>
+      <td>${signalHtml(r.signal)}</td>
+      <td class="r" style="color:#888">${fmt(r.stop)}</td>
     </tr>`).join('');
 }
 
 function sortDmaTable(col) {
   dmaSortState.dir = (dmaSortState.col === col) ? -dmaSortState.dir : 1;
   dmaSortState.col = col;
-
-  // Update header arrows
   document.querySelectorAll('#dma-table th.sortable').forEach(th => {
     th.classList.remove('sort-asc', 'sort-desc');
-  });
-  // find the clicked th by its onclick text
-  document.querySelectorAll('#dma-table th.sortable').forEach(th => {
-    if (th.getAttribute('onclick') === `sortDmaTable('${col}')`) {
+    if (th.getAttribute('onclick') === `sortDmaTable('${col}')`)
       th.classList.add(dmaSortState.dir === 1 ? 'sort-asc' : 'sort-desc');
-    }
   });
-
   const sorted = [...dmaRows].sort((a, b) => {
-    const va = a[col], vb = b[col];
+    let va = a[col], vb = b[col];
+    // Signal: sort by priority order
+    if (col === 'signal') { va = SIGNAL_ORDER[va]??9; vb = SIGNAL_ORDER[vb]??9; }
     if (va == null && vb == null) return 0;
-    if (va == null) return 1;
-    if (vb == null) return -1;
+    if (va == null) return 1; if (vb == null) return -1;
     if (typeof va === 'string') return dmaSortState.dir * va.localeCompare(vb);
     return dmaSortState.dir * (va - vb);
   });
   renderDmaTable(sorted);
+}
+
+// ── Signal Scanner ─────────────────────────────────────────────────────────
+let _scannerCache = null;
+
+function renderScanner(data) {
+  const allBrokerStocks = allRows.filter(r => activeBroker === 'All' || r.broker === activeBroker);
+  const rows = allBrokerStocks
+    .map(r => ({ stock: r.stock, broker: r.broker, ...( data[r.stock] || {}) }))
+    .filter(r => ['Buy Setup','Near Entry','Watch'].includes(r.signal))
+    .sort((a,b) => (SIGNAL_ORDER[a.signal]??9) - (SIGNAL_ORDER[b.signal]??9) || (a.ema_dist_pct??99) - (b.ema_dist_pct??99));
+
+  const buy  = rows.filter(r => r.signal === 'Buy Setup').length;
+  const near = rows.filter(r => r.signal === 'Near Entry').length;
+  const watch= rows.filter(r => r.signal === 'Watch').length;
+
+  document.getElementById('scanner-pills').innerHTML = `
+    <span class="scanner-pill buy">🟢 Buy Setup <strong>${buy}</strong></span>
+    <span class="scanner-pill near">🟠 Near Entry <strong>${near}</strong></span>
+    <span class="scanner-pill watch">👀 Watch <strong>${watch}</strong></span>
+    <span style="font-size:.72rem;color:#888;margin-left:auto">
+      Only Buy Setup, Near Entry &amp; Watch shown · ${allBrokerStocks.length} stocks scanned
+    </span>`;
+
+  const tbody = document.getElementById('scanner-tbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">No actionable setups right now</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td class="fw-bold">${r.stock}</td>
+      <td class="r">${fmt(r.cmp)}</td>
+      <td class="r ${dmaClass(r.cmp, r.ema20)}">${fmt(r.ema20)}</td>
+      <td class="r">${distHtml(r.ema_dist_pct)}</td>
+      <td class="r ${dmaClass(r.cmp, r.dma50)}">${fmt(r.dma50)}</td>
+      <td class="r ${dmaClass(r.cmp, r.dma200)}">${fmt(r.dma200)}</td>
+      <td>${slopeHtml(r.dma200_slope)}</td>
+      <td class="r" style="color:#888">${fmt(r.stop)}</td>
+      <td>${signalHtml(r.signal)}</td>
+    </tr>`).join('');
+}
+
+function loadScanner() {
+  fetch('/api/dma')
+    .then(r => r.json())
+    .then(data => {
+      _scannerCache = data;
+      renderScanner(data);
+      // Update timestamp
+      const ts = document.getElementById('scanner-ts');
+      if (ts) ts.textContent = 'Data via yfinance';
+    })
+    .catch(() => {
+      document.getElementById('scanner-tbody').innerHTML =
+        '<tr><td colspan="9" class="text-center text-muted py-3">Could not load signal data</td></tr>';
+    });
 }
 
 // ── Toast for Fetch Now ────────────────────────────────────────────────────
