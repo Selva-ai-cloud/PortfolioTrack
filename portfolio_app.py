@@ -493,10 +493,10 @@ HTML = """<!DOCTYPE html>
   .badge-neu{background:#FFEB9C;color:#7d6608;padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:600;white-space:nowrap}
   .cross-up{color:#1c8c44;font-weight:700}
   .cross-dn{color:#c0392b;font-weight:700}
-  .dma-refresh-btn{font-size:.72rem;background:rgba(255,255,255,.15);color:rgba(255,255,255,.8);
-                   border:1px solid rgba(255,255,255,.3);border-radius:12px;padding:2px 10px;
-                   cursor:pointer;transition:all .15s;white-space:nowrap}
-  .dma-refresh-btn:hover{background:rgba(255,255,255,.25);color:#fff}
+  .dma-refresh-btn{font-size:.75rem;background:#1F3864;color:#fff;
+                   border:1px solid #1F3864;border-radius:12px;padding:3px 12px;
+                   cursor:pointer;transition:all .15s;white-space:nowrap;font-weight:500}
+  .dma-refresh-btn:hover{background:#16305a;border-color:#16305a}
   .dma-loading{text-align:center;padding:24px;color:#777;font-size:.9rem}
 </style>
 </head>
