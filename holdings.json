@@ -1,8 +1,8 @@
 {
   "ASHOKLEY": {
     "yahoo": "ASHOKLEY.BO",
-    "avg": 169.222194,
-    "qty": 1185,
+    "avg": 166.27,
+    "qty": 1356,
     "broker": "Zerodha"
   },
   "BAJFINANCE": {
@@ -79,8 +79,8 @@
   },
   "LICI": {
     "yahoo": "LICI.NS",
-    "avg": 769.745161,
-    "qty": 62,
+    "avg": 384.87,
+    "qty": 124,
     "broker": "Zerodha"
   },
   "M&M": {
@@ -151,8 +151,8 @@
   },
   "VEDL": {
     "yahoo": "VEDL.NS",
-    "avg": 308.26,
-    "qty": 87,
+    "avg": 326.13,
+    "qty": 174,
     "broker": "Zerodha"
   },
   "YATHARTH": {
@@ -295,8 +295,8 @@
   },
   "NATIONALUM": {
     "yahoo": "NATIONALUM.NS",
-    "avg": 405.5,
-    "qty": 50,
+    "avg": 412.08,
+    "qty": 73,
     "broker": "Zerodha"
   },
   "IEX": {
