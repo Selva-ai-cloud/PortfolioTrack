@@ -5752,5 +5752,1811 @@
       "pnl_pct": -2.12
     },
     "_total_pnl": 1164276.05
+  },
+  "02-Jun-26": {
+    "ASHOKLEY": {
+      "close": 149.15,
+      "pnl_rs": -23785.55,
+      "pnl_pct": -11.86
+    },
+    "BAJFINANCE": {
+      "close": 883.5,
+      "pnl_rs": 2150.8,
+      "pnl_pct": 3.35
+    },
+    "BANKINDIA": {
+      "close": 137.4,
+      "pnl_rs": -14717.63,
+      "pnl_pct": -9.68
+    },
+    "CANBK": {
+      "close": 129.08,
+      "pnl_rs": 48033.84,
+      "pnl_pct": 25.21
+    },
+    "CGPOWER": {
+      "close": 907.7,
+      "pnl_rs": 14343.8,
+      "pnl_pct": 32.79
+    },
+    "CUB": {
+      "close": 249.15,
+      "pnl_rs": 52693.76,
+      "pnl_pct": 14.21
+    },
+    "EICHERMOT": {
+      "close": 7145.0,
+      "pnl_rs": -521.0,
+      "pnl_pct": -1.44
+    },
+    "EIDPARRY": {
+      "close": 755.3,
+      "pnl_rs": -13197.25,
+      "pnl_pct": -17.57
+    },
+    "GOLDBEES": {
+      "close": 128.78,
+      "pnl_rs": 15695.92,
+      "pnl_pct": 3.41
+    },
+    "IDBI": {
+      "close": 73.19,
+      "pnl_rs": -7.16,
+      "pnl_pct": -8.91
+    },
+    "INDIANB": {
+      "close": 825.55,
+      "pnl_rs": 141255.1,
+      "pnl_pct": 46.26
+    },
+    "IOB": {
+      "close": 32.87,
+      "pnl_rs": -10979.51,
+      "pnl_pct": -6.26
+    },
+    "KARURVYSYA": {
+      "close": 293.05,
+      "pnl_rs": 205804.75,
+      "pnl_pct": 57.53
+    },
+    "LICI": {
+      "close": 400.7,
+      "pnl_rs": -22880.8,
+      "pnl_pct": -47.94
+    },
+    "M&M": {
+      "close": 2998.3,
+      "pnl_rs": 174283.2,
+      "pnl_pct": 31.96
+    },
+    "MANAPPURAM": {
+      "close": 313.35,
+      "pnl_rs": 85050.0,
+      "pnl_pct": 82.6
+    },
+    "MAXHEALTH": {
+      "close": 948.7,
+      "pnl_rs": 7145.0,
+      "pnl_pct": 12.06
+    },
+    "NH": {
+      "close": 1935.0,
+      "pnl_rs": 4327.5,
+      "pnl_pct": 4.68
+    },
+    "PTC": {
+      "close": 188.46,
+      "pnl_rs": 51216.21,
+      "pnl_pct": 9.96
+    },
+    "SBIN": {
+      "close": 956.65,
+      "pnl_rs": 10577.0,
+      "pnl_pct": 29.93
+    },
+    "SILVERCASE": {
+      "close": 26.7,
+      "pnl_rs": 77109.37,
+      "pnl_pct": 10.27
+    },
+    "TMCV": {
+      "close": 370.4,
+      "pnl_rs": 60845.7,
+      "pnl_pct": 48.93
+    },
+    "TMPV": {
+      "close": 391.0,
+      "pnl_rs": -92904.75,
+      "pnl_pct": -28.23
+    },
+    "TVSMOTOR": {
+      "close": 3366.9,
+      "pnl_rs": 297540.0,
+      "pnl_pct": 64.68
+    },
+    "VBL": {
+      "close": 537.0,
+      "pnl_rs": 22054.5,
+      "pnl_pct": 20.75
+    },
+    "VEDL": {
+      "close": 333.55,
+      "pnl_rs": 2200.23,
+      "pnl_pct": 8.2
+    },
+    "YATHARTH": {
+      "close": 812.95,
+      "pnl_rs": 104414.9,
+      "pnl_pct": 54.99
+    },
+    "BEL": {
+      "close": 407.85,
+      "pnl_rs": -755.0,
+      "pnl_pct": -1.82
+    },
+    "ANANT RAJ": {
+      "close": 552.2,
+      "pnl_rs": 1158.8,
+      "pnl_pct": 11.72
+    },
+    "ASIAN PAINTS": {
+      "close": 2660.7,
+      "pnl_rs": 1927.4,
+      "pnl_pct": 16.94
+    },
+    "AUTHUM INVEST": {
+      "close": 453.65,
+      "pnl_rs": 474.95,
+      "pnl_pct": 4.77
+    },
+    "BLS INTERNAT": {
+      "close": 269.15,
+      "pnl_rs": 382.4,
+      "pnl_pct": 3.68
+    },
+    "CEMINDIA PROJ": {
+      "close": 1041.7,
+      "pnl_rs": 8688.96,
+      "pnl_pct": 86.36
+    },
+    "COCHINSHIP": {
+      "close": 1467.7,
+      "pnl_rs": 237.09,
+      "pnl_pct": 2.36
+    },
+    "CRISIL": {
+      "close": 3849.7,
+      "pnl_rs": -886.52,
+      "pnl_pct": -10.33
+    },
+    "DIXON": {
+      "close": 11604.0,
+      "pnl_rs": 1136.92,
+      "pnl_pct": 10.86
+    },
+    "GODFRYPHLP": {
+      "close": 2274.5,
+      "pnl_rs": 615.02,
+      "pnl_pct": 15.63
+    },
+    "HAL": {
+      "close": 4278.5,
+      "pnl_rs": 1101.72,
+      "pnl_pct": 9.39
+    },
+    "HINDUNILVR": {
+      "close": 2093.7,
+      "pnl_rs": -752.35,
+      "pnl_pct": -6.7
+    },
+    "INOXWIND": {
+      "close": 84.28,
+      "pnl_rs": -124.8,
+      "pnl_pct": -1.22
+    },
+    "ITC": {
+      "close": 283.25,
+      "pnl_rs": -871.68,
+      "pnl_pct": -8.77
+    },
+    "MGL": {
+      "close": 1092.2,
+      "pnl_rs": -239.13,
+      "pnl_pct": -2.37
+    },
+    "GOLDBEES_GW": {
+      "close": 128.67,
+      "pnl_rs": -471.36,
+      "pnl_pct": -3.53
+    },
+    "SILVERBEES": {
+      "close": 251.56,
+      "pnl_rs": -62.39,
+      "pnl_pct": -0.49
+    },
+    "PIIND": {
+      "close": 2739.8,
+      "pnl_rs": -1041.78,
+      "pnl_pct": -11.25
+    },
+    "SUZLON": {
+      "close": 54.52,
+      "pnl_rs": 3705.0,
+      "pnl_pct": 37.33
+    },
+    "TEJASNET": {
+      "close": 537.3,
+      "pnl_rs": 1620.0,
+      "pnl_pct": 33.56
+    },
+    "ZYDUSLIFE": {
+      "close": 1078.3,
+      "pnl_rs": 1831.06,
+      "pnl_pct": 18.26
+    },
+    "TVSMNCRPS": {
+      "close": 10.25,
+      "pnl_rs": 8200.0,
+      "pnl_pct": null
+    },
+    "NATIONALUM": {
+      "close": 434.4,
+      "pnl_rs": 1445.0,
+      "pnl_pct": 7.13
+    },
+    "IEX": {
+      "close": 125.25,
+      "pnl_rs": -1114.35,
+      "pnl_pct": -2.22
+    },
+    "_total_pnl": 1223952.89
+  },
+  "03-Jun-26": {
+    "ASHOKLEY": {
+      "close": 145.85,
+      "pnl_rs": -27696.05,
+      "pnl_pct": -13.81
+    },
+    "BAJFINANCE": {
+      "close": 876.55,
+      "pnl_rs": 1629.55,
+      "pnl_pct": 2.54
+    },
+    "BANKINDIA": {
+      "close": 139.95,
+      "pnl_rs": -12167.63,
+      "pnl_pct": -8.0
+    },
+    "CANBK": {
+      "close": 131.85,
+      "pnl_rs": 53152.8,
+      "pnl_pct": 27.9
+    },
+    "CGPOWER": {
+      "close": 906.65,
+      "pnl_rs": 14276.6,
+      "pnl_pct": 32.63
+    },
+    "CUB": {
+      "close": 249.45,
+      "pnl_rs": 53203.76,
+      "pnl_pct": 14.35
+    },
+    "EICHERMOT": {
+      "close": 7121.8,
+      "pnl_rs": -637.0,
+      "pnl_pct": -1.76
+    },
+    "EIDPARRY": {
+      "close": 756.85,
+      "pnl_rs": -13070.15,
+      "pnl_pct": -17.4
+    },
+    "GOLDBEES": {
+      "close": 127.65,
+      "pnl_rs": 11514.92,
+      "pnl_pct": 2.5
+    },
+    "IDBI": {
+      "close": 73.41,
+      "pnl_rs": -6.94,
+      "pnl_pct": -8.64
+    },
+    "INDIANB": {
+      "close": 847.9,
+      "pnl_rs": 153346.45,
+      "pnl_pct": 50.22
+    },
+    "IOB": {
+      "close": 33.04,
+      "pnl_rs": -10129.51,
+      "pnl_pct": -5.78
+    },
+    "KARURVYSYA": {
+      "close": 289.1,
+      "pnl_rs": 198208.9,
+      "pnl_pct": 55.41
+    },
+    "LICI": {
+      "close": 402.9,
+      "pnl_rs": -22744.4,
+      "pnl_pct": -47.66
+    },
+    "M&M": {
+      "close": 3011.1,
+      "pnl_rs": 177355.2,
+      "pnl_pct": 32.52
+    },
+    "MANAPPURAM": {
+      "close": 312.0,
+      "pnl_rs": 84240.0,
+      "pnl_pct": 81.82
+    },
+    "MAXHEALTH": {
+      "close": 965.55,
+      "pnl_rs": 8324.5,
+      "pnl_pct": 14.05
+    },
+    "NH": {
+      "close": 1981.35,
+      "pnl_rs": 6645.0,
+      "pnl_pct": 7.19
+    },
+    "PTC": {
+      "close": 185.2,
+      "pnl_rs": 41436.21,
+      "pnl_pct": 8.06
+    },
+    "SBIN": {
+      "close": 970.45,
+      "pnl_rs": 11239.4,
+      "pnl_pct": 31.8
+    },
+    "SILVERCASE": {
+      "close": 26.21,
+      "pnl_rs": 61919.37,
+      "pnl_pct": 8.25
+    },
+    "TMCV": {
+      "close": 373.6,
+      "pnl_rs": 62445.7,
+      "pnl_pct": 50.22
+    },
+    "TMPV": {
+      "close": 398.05,
+      "pnl_rs": -88646.55,
+      "pnl_pct": -26.94
+    },
+    "TVSMOTOR": {
+      "close": 3316.9,
+      "pnl_rs": 286290.0,
+      "pnl_pct": 62.24
+    },
+    "VBL": {
+      "close": 533.4,
+      "pnl_rs": 21194.1,
+      "pnl_pct": 19.94
+    },
+    "VEDL": {
+      "close": 328.2,
+      "pnl_rs": 1734.78,
+      "pnl_pct": 6.47
+    },
+    "YATHARTH": {
+      "close": 810.5,
+      "pnl_rs": 103528.0,
+      "pnl_pct": 54.52
+    },
+    "BEL": {
+      "close": 406.6,
+      "pnl_rs": -880.0,
+      "pnl_pct": -2.12
+    },
+    "ANANT RAJ": {
+      "close": 548.0,
+      "pnl_rs": 1074.8,
+      "pnl_pct": 10.87
+    },
+    "ASIAN PAINTS": {
+      "close": 2662.4,
+      "pnl_rs": 1935.9,
+      "pnl_pct": 17.02
+    },
+    "AUTHUM INVEST": {
+      "close": 454.5,
+      "pnl_rs": 494.5,
+      "pnl_pct": 4.97
+    },
+    "BLS INTERNAT": {
+      "close": 270.4,
+      "pnl_rs": 432.4,
+      "pnl_pct": 4.16
+    },
+    "CEMINDIA PROJ": {
+      "close": 1024.9,
+      "pnl_rs": 8386.56,
+      "pnl_pct": 83.35
+    },
+    "COCHINSHIP": {
+      "close": 1455.7,
+      "pnl_rs": 153.09,
+      "pnl_pct": 1.53
+    },
+    "CRISIL": {
+      "close": 3888.3,
+      "pnl_rs": -809.32,
+      "pnl_pct": -9.43
+    },
+    "DIXON": {
+      "close": 11227.0,
+      "pnl_rs": 759.92,
+      "pnl_pct": 7.26
+    },
+    "GODFRYPHLP": {
+      "close": 2246.9,
+      "pnl_rs": 559.82,
+      "pnl_pct": 14.23
+    },
+    "HAL": {
+      "close": 4264.1,
+      "pnl_rs": 1058.52,
+      "pnl_pct": 9.02
+    },
+    "HINDUNILVR": {
+      "close": 2090.6,
+      "pnl_rs": -767.85,
+      "pnl_pct": -6.84
+    },
+    "INOXWIND": {
+      "close": 83.01,
+      "pnl_rs": -277.2,
+      "pnl_pct": -2.71
+    },
+    "ITC": {
+      "close": 277.0,
+      "pnl_rs": -1071.68,
+      "pnl_pct": -10.79
+    },
+    "MGL": {
+      "close": 1080.8,
+      "pnl_rs": -341.73,
+      "pnl_pct": -3.39
+    },
+    "GOLDBEES_GW": {
+      "close": 127.64,
+      "pnl_rs": -574.36,
+      "pnl_pct": -4.31
+    },
+    "SILVERBEES": {
+      "close": 246.79,
+      "pnl_rs": -300.89,
+      "pnl_pct": -2.38
+    },
+    "PIIND": {
+      "close": 2738.3,
+      "pnl_rs": -1046.28,
+      "pnl_pct": -11.3
+    },
+    "SUZLON": {
+      "close": 54.4,
+      "pnl_rs": 3675.0,
+      "pnl_pct": 37.03
+    },
+    "TEJASNET": {
+      "close": 569.25,
+      "pnl_rs": 2003.4,
+      "pnl_pct": 41.5
+    },
+    "ZYDUSLIFE": {
+      "close": 1076.6,
+      "pnl_rs": 1812.36,
+      "pnl_pct": 18.07
+    },
+    "TVSMNCRPS": {
+      "close": 10.3,
+      "pnl_rs": 8240.0,
+      "pnl_pct": null
+    },
+    "NATIONALUM": {
+      "close": 436.9,
+      "pnl_rs": 1570.0,
+      "pnl_pct": 7.74
+    },
+    "IEX": {
+      "close": 123.28,
+      "pnl_rs": -1884.62,
+      "pnl_pct": -3.76
+    },
+    "_total_pnl": 1200789.35
+  },
+  "04-Jun-26": {
+    "ASHOKLEY": {
+      "close": 144.95,
+      "pnl_rs": -28762.55,
+      "pnl_pct": -14.34
+    },
+    "BAJFINANCE": {
+      "close": 877.05,
+      "pnl_rs": 1667.05,
+      "pnl_pct": 2.6
+    },
+    "BANKINDIA": {
+      "close": 139.75,
+      "pnl_rs": -12367.63,
+      "pnl_pct": -8.13
+    },
+    "CANBK": {
+      "close": 133.12,
+      "pnl_rs": 55499.76,
+      "pnl_pct": 29.13
+    },
+    "CGPOWER": {
+      "close": 937.9,
+      "pnl_rs": 16276.6,
+      "pnl_pct": 37.2
+    },
+    "CUB": {
+      "close": 245.8,
+      "pnl_rs": 46998.76,
+      "pnl_pct": 12.67
+    },
+    "EICHERMOT": {
+      "close": 7140.5,
+      "pnl_rs": -543.5,
+      "pnl_pct": -1.5
+    },
+    "EIDPARRY": {
+      "close": 751.3,
+      "pnl_rs": -13525.25,
+      "pnl_pct": -18.0
+    },
+    "GOLDBEES": {
+      "close": 128.64,
+      "pnl_rs": 15177.92,
+      "pnl_pct": 3.29
+    },
+    "IDBI": {
+      "close": 72.94,
+      "pnl_rs": -7.41,
+      "pnl_pct": -9.22
+    },
+    "INDIANB": {
+      "close": 837.25,
+      "pnl_rs": 147584.8,
+      "pnl_pct": 48.33
+    },
+    "IOB": {
+      "close": 32.91,
+      "pnl_rs": -10779.51,
+      "pnl_pct": -6.15
+    },
+    "KARURVYSYA": {
+      "close": 283.95,
+      "pnl_rs": 188305.45,
+      "pnl_pct": 52.64
+    },
+    "LICI": {
+      "close": 398.65,
+      "pnl_rs": -23007.9,
+      "pnl_pct": -48.21
+    },
+    "M&M": {
+      "close": 3016.1,
+      "pnl_rs": 178555.2,
+      "pnl_pct": 32.74
+    },
+    "MANAPPURAM": {
+      "close": 311.35,
+      "pnl_rs": 83850.0,
+      "pnl_pct": 81.44
+    },
+    "MAXHEALTH": {
+      "close": 966.2,
+      "pnl_rs": 8370.0,
+      "pnl_pct": 14.12
+    },
+    "NH": {
+      "close": 1951.5,
+      "pnl_rs": 5152.5,
+      "pnl_pct": 5.57
+    },
+    "PTC": {
+      "close": 182.99,
+      "pnl_rs": 34806.21,
+      "pnl_pct": 6.77
+    },
+    "SBIN": {
+      "close": 979.25,
+      "pnl_rs": 11661.8,
+      "pnl_pct": 33.0
+    },
+    "SILVERCASE": {
+      "close": 26.17,
+      "pnl_rs": 60679.37,
+      "pnl_pct": 8.08
+    },
+    "TMCV": {
+      "close": 373.6,
+      "pnl_rs": 62445.7,
+      "pnl_pct": 50.22
+    },
+    "TMPV": {
+      "close": 399.95,
+      "pnl_rs": -87498.95,
+      "pnl_pct": -26.59
+    },
+    "TVSMOTOR": {
+      "close": 3362.5,
+      "pnl_rs": 296550.0,
+      "pnl_pct": 64.47
+    },
+    "VBL": {
+      "close": 528.4,
+      "pnl_rs": 19999.1,
+      "pnl_pct": 18.82
+    },
+    "VEDL": {
+      "close": 327.5,
+      "pnl_rs": 1673.88,
+      "pnl_pct": 6.24
+    },
+    "YATHARTH": {
+      "close": 807.7,
+      "pnl_rs": 102514.4,
+      "pnl_pct": 53.99
+    },
+    "BEL": {
+      "close": 409.9,
+      "pnl_rs": -550.0,
+      "pnl_pct": -1.32
+    },
+    "ANANT RAJ": {
+      "close": 589.35,
+      "pnl_rs": 1901.8,
+      "pnl_pct": 19.24
+    },
+    "ASIAN PAINTS": {
+      "close": 2661.6,
+      "pnl_rs": 1931.9,
+      "pnl_pct": 16.98
+    },
+    "AUTHUM INVEST": {
+      "close": 451.3,
+      "pnl_rs": 420.9,
+      "pnl_pct": 4.23
+    },
+    "BLS INTERNAT": {
+      "close": 263.35,
+      "pnl_rs": 150.4,
+      "pnl_pct": 1.45
+    },
+    "CEMINDIA PROJ": {
+      "close": 1127.3,
+      "pnl_rs": 10229.76,
+      "pnl_pct": 101.67
+    },
+    "COCHINSHIP": {
+      "close": 1472.4,
+      "pnl_rs": 269.99,
+      "pnl_pct": 2.69
+    },
+    "CRISIL": {
+      "close": 3903.8,
+      "pnl_rs": -778.32,
+      "pnl_pct": -9.07
+    },
+    "DIXON": {
+      "close": 11488.0,
+      "pnl_rs": 1020.92,
+      "pnl_pct": 9.75
+    },
+    "GODFRYPHLP": {
+      "close": 2234.0,
+      "pnl_rs": 534.02,
+      "pnl_pct": 13.57
+    },
+    "HAL": {
+      "close": 4191.0,
+      "pnl_rs": 839.22,
+      "pnl_pct": 7.15
+    },
+    "HINDUNILVR": {
+      "close": 2079.4,
+      "pnl_rs": -823.85,
+      "pnl_pct": -7.34
+    },
+    "INOXWIND": {
+      "close": 85.78,
+      "pnl_rs": 55.2,
+      "pnl_pct": 0.54
+    },
+    "ITC": {
+      "close": 280.3,
+      "pnl_rs": -966.08,
+      "pnl_pct": -9.72
+    },
+    "MGL": {
+      "close": 1074.4,
+      "pnl_rs": -399.33,
+      "pnl_pct": -3.97
+    },
+    "GOLDBEES_GW": {
+      "close": 128.5,
+      "pnl_rs": -488.36,
+      "pnl_pct": -3.66
+    },
+    "SILVERBEES": {
+      "close": 246.56,
+      "pnl_rs": -312.39,
+      "pnl_pct": -2.47
+    },
+    "PIIND": {
+      "close": 2707.5,
+      "pnl_rs": -1138.68,
+      "pnl_pct": -12.3
+    },
+    "SUZLON": {
+      "close": 55.62,
+      "pnl_rs": 3980.0,
+      "pnl_pct": 40.1
+    },
+    "TEJASNET": {
+      "close": 601.95,
+      "pnl_rs": 2395.8,
+      "pnl_pct": 49.63
+    },
+    "ZYDUSLIFE": {
+      "close": 1084.6,
+      "pnl_rs": 1900.36,
+      "pnl_pct": 18.95
+    },
+    "TVSMNCRPS": {
+      "close": 10.3,
+      "pnl_rs": 8240.0,
+      "pnl_pct": null
+    },
+    "NATIONALUM": {
+      "close": 414.0,
+      "pnl_rs": 425.0,
+      "pnl_pct": 2.1
+    },
+    "IEX": {
+      "close": 124.07,
+      "pnl_rs": -1575.73,
+      "pnl_pct": -3.15
+    },
+    "_total_pnl": 1188538.33
+  },
+  "05-Jun-26": {
+    "ASHOKLEY": {
+      "close": 145.45,
+      "pnl_rs": -28231.92,
+      "pnl_pct": -12.52
+    },
+    "BAJFINANCE": {
+      "close": 889.5,
+      "pnl_rs": 2600.8,
+      "pnl_pct": 4.06
+    },
+    "BANKINDIA": {
+      "close": 141.45,
+      "pnl_rs": -10667.63,
+      "pnl_pct": -7.01
+    },
+    "CANBK": {
+      "close": 135.81,
+      "pnl_rs": 60470.88,
+      "pnl_pct": 31.74
+    },
+    "CGPOWER": {
+      "close": 937.85,
+      "pnl_rs": 16273.4,
+      "pnl_pct": 37.2
+    },
+    "CUB": {
+      "close": 244.4,
+      "pnl_rs": 44618.76,
+      "pnl_pct": 12.03
+    },
+    "EICHERMOT": {
+      "close": 7051.0,
+      "pnl_rs": -991.0,
+      "pnl_pct": -2.73
+    },
+    "EIDPARRY": {
+      "close": 735.2,
+      "pnl_rs": -14845.45,
+      "pnl_pct": -19.76
+    },
+    "GOLDBEES": {
+      "close": 127.73,
+      "pnl_rs": 11810.92,
+      "pnl_pct": 2.56
+    },
+    "IDBI": {
+      "close": 73.08,
+      "pnl_rs": -7.27,
+      "pnl_pct": -9.05
+    },
+    "INDIANB": {
+      "close": 842.05,
+      "pnl_rs": 150181.6,
+      "pnl_pct": 49.18
+    },
+    "IOB": {
+      "close": 32.96,
+      "pnl_rs": -10529.51,
+      "pnl_pct": -6.01
+    },
+    "KARURVYSYA": {
+      "close": 279.35,
+      "pnl_rs": 179459.65,
+      "pnl_pct": 50.17
+    },
+    "LICI": {
+      "close": 399.9,
+      "pnl_rs": 1863.72,
+      "pnl_pct": 3.91
+    },
+    "M&M": {
+      "close": 3040.5,
+      "pnl_rs": 184411.2,
+      "pnl_pct": 33.82
+    },
+    "MANAPPURAM": {
+      "close": 308.8,
+      "pnl_rs": 82320.0,
+      "pnl_pct": 79.95
+    },
+    "MAXHEALTH": {
+      "close": 977.25,
+      "pnl_rs": 9143.5,
+      "pnl_pct": 15.43
+    },
+    "NH": {
+      "close": 1966.1,
+      "pnl_rs": 5882.5,
+      "pnl_pct": 6.36
+    },
+    "PTC": {
+      "close": 184.39,
+      "pnl_rs": 39006.21,
+      "pnl_pct": 7.59
+    },
+    "SBIN": {
+      "close": 977.7,
+      "pnl_rs": 11587.4,
+      "pnl_pct": 32.79
+    },
+    "SILVERCASE": {
+      "close": 25.88,
+      "pnl_rs": 51689.37,
+      "pnl_pct": 6.89
+    },
+    "TMCV": {
+      "close": 368.7,
+      "pnl_rs": 59995.7,
+      "pnl_pct": 48.25
+    },
+    "TMPV": {
+      "close": 397.85,
+      "pnl_rs": -88767.35,
+      "pnl_pct": -26.98
+    },
+    "TVSMOTOR": {
+      "close": 3383.9,
+      "pnl_rs": 301365.0,
+      "pnl_pct": 65.51
+    },
+    "VBL": {
+      "close": 523.3,
+      "pnl_rs": 18780.2,
+      "pnl_pct": 17.67
+    },
+    "VEDL": {
+      "close": 315.6,
+      "pnl_rs": -1832.22,
+      "pnl_pct": -3.23
+    },
+    "YATHARTH": {
+      "close": 808.9,
+      "pnl_rs": 102948.8,
+      "pnl_pct": 54.22
+    },
+    "BEL": {
+      "close": 408.2,
+      "pnl_rs": -720.0,
+      "pnl_pct": -1.73
+    },
+    "ANANT RAJ": {
+      "close": 570.05,
+      "pnl_rs": 1515.8,
+      "pnl_pct": 15.33
+    },
+    "ASIAN PAINTS": {
+      "close": 2686.7,
+      "pnl_rs": 2057.4,
+      "pnl_pct": 18.09
+    },
+    "AUTHUM INVEST": {
+      "close": 462.7,
+      "pnl_rs": 683.1,
+      "pnl_pct": 6.86
+    },
+    "BLS INTERNAT": {
+      "close": 261.1,
+      "pnl_rs": 60.4,
+      "pnl_pct": 0.58
+    },
+    "CEMINDIA PROJ": {
+      "close": 1112.8,
+      "pnl_rs": 9968.76,
+      "pnl_pct": 99.08
+    },
+    "COCHINSHIP": {
+      "close": 1439.1,
+      "pnl_rs": 36.89,
+      "pnl_pct": 0.37
+    },
+    "CRISIL": {
+      "close": 3878.9,
+      "pnl_rs": -828.12,
+      "pnl_pct": -9.65
+    },
+    "DIXON": {
+      "close": 11432.0,
+      "pnl_rs": 964.92,
+      "pnl_pct": 9.22
+    },
+    "GODFRYPHLP": {
+      "close": 2220.1,
+      "pnl_rs": 506.22,
+      "pnl_pct": 12.87
+    },
+    "HAL": {
+      "close": 4216.9,
+      "pnl_rs": 916.92,
+      "pnl_pct": 7.81
+    },
+    "HINDUNILVR": {
+      "close": 2121.5,
+      "pnl_rs": -613.35,
+      "pnl_pct": -5.47
+    },
+    "INOXWIND": {
+      "close": 86.79,
+      "pnl_rs": 176.4,
+      "pnl_pct": 1.72
+    },
+    "ITC": {
+      "close": 280.7,
+      "pnl_rs": -953.28,
+      "pnl_pct": -9.59
+    },
+    "MGL": {
+      "close": 1089.1,
+      "pnl_rs": -267.03,
+      "pnl_pct": -2.65
+    },
+    "GOLDBEES_GW": {
+      "close": 127.78,
+      "pnl_rs": -560.36,
+      "pnl_pct": -4.2
+    },
+    "SILVERBEES": {
+      "close": 243.58,
+      "pnl_rs": -461.39,
+      "pnl_pct": -3.65
+    },
+    "PIIND": {
+      "close": 2717.9,
+      "pnl_rs": -1107.48,
+      "pnl_pct": -11.96
+    },
+    "SUZLON": {
+      "close": 55.31,
+      "pnl_rs": 3902.5,
+      "pnl_pct": 39.32
+    },
+    "TEJASNET": {
+      "close": 576.2,
+      "pnl_rs": 2086.8,
+      "pnl_pct": 43.23
+    },
+    "ZYDUSLIFE": {
+      "close": 1089.0,
+      "pnl_rs": 1948.76,
+      "pnl_pct": 19.43
+    },
+    "TVSMNCRPS": {
+      "close": 10.3,
+      "pnl_rs": 8240.0,
+      "pnl_pct": null
+    },
+    "NATIONALUM": {
+      "close": 395.7,
+      "pnl_rs": -1195.74,
+      "pnl_pct": -3.97
+    },
+    "IEX": {
+      "close": 122.38,
+      "pnl_rs": -2236.52,
+      "pnl_pct": -4.47
+    },
+    "_total_pnl": 1202658.86
+  },
+  "08-Jun-26": {
+    "ASHOKLEY": {
+      "close": 141.0,
+      "pnl_rs": -34266.12,
+      "pnl_pct": -15.2
+    },
+    "BAJFINANCE": {
+      "close": 869.9,
+      "pnl_rs": 1130.8,
+      "pnl_pct": 1.76
+    },
+    "BANKINDIA": {
+      "close": 139.5,
+      "pnl_rs": -12617.63,
+      "pnl_pct": -8.29
+    },
+    "CANBK": {
+      "close": 131.91,
+      "pnl_rs": 53263.68,
+      "pnl_pct": 27.96
+    },
+    "CGPOWER": {
+      "close": 903.4,
+      "pnl_rs": 14068.6,
+      "pnl_pct": 32.16
+    },
+    "CUB": {
+      "close": 245.35,
+      "pnl_rs": 46233.76,
+      "pnl_pct": 12.47
+    },
+    "EICHERMOT": {
+      "close": 7056.1,
+      "pnl_rs": -965.5,
+      "pnl_pct": -2.66
+    },
+    "EIDPARRY": {
+      "close": 721.2,
+      "pnl_rs": -15993.45,
+      "pnl_pct": -21.29
+    },
+    "GOLDBEES": {
+      "close": 124.3,
+      "pnl_rs": -880.08,
+      "pnl_pct": -0.19
+    },
+    "IDBI": {
+      "close": 71.85,
+      "pnl_rs": -8.5,
+      "pnl_pct": -10.58
+    },
+    "INDIANB": {
+      "close": 843.0,
+      "pnl_rs": 150695.55,
+      "pnl_pct": 49.35
+    },
+    "IOB": {
+      "close": 32.6,
+      "pnl_rs": -12329.51,
+      "pnl_pct": -7.03
+    },
+    "KARURVYSYA": {
+      "close": 281.4,
+      "pnl_rs": 183401.8,
+      "pnl_pct": 51.27
+    },
+    "LICI": {
+      "close": 395.5,
+      "pnl_rs": 1318.12,
+      "pnl_pct": 2.76
+    },
+    "M&M": {
+      "close": 2966.0,
+      "pnl_rs": 166531.2,
+      "pnl_pct": 30.54
+    },
+    "MANAPPURAM": {
+      "close": 298.0,
+      "pnl_rs": 75840.0,
+      "pnl_pct": 73.66
+    },
+    "MAXHEALTH": {
+      "close": 1007.45,
+      "pnl_rs": 11257.5,
+      "pnl_pct": 19.0
+    },
+    "NH": {
+      "close": 1918.0,
+      "pnl_rs": 3477.5,
+      "pnl_pct": 3.76
+    },
+    "PTC": {
+      "close": 193.06,
+      "pnl_rs": 65016.21,
+      "pnl_pct": 12.65
+    },
+    "SBIN": {
+      "close": 981.95,
+      "pnl_rs": 11791.4,
+      "pnl_pct": 33.36
+    },
+    "SILVERCASE": {
+      "close": 24.28,
+      "pnl_rs": 2089.37,
+      "pnl_pct": 0.28
+    },
+    "TMCV": {
+      "close": 361.75,
+      "pnl_rs": 56520.7,
+      "pnl_pct": 45.45
+    },
+    "TMPV": {
+      "close": 389.2,
+      "pnl_rs": -93991.95,
+      "pnl_pct": -28.56
+    },
+    "TVSMOTOR": {
+      "close": 3317.6,
+      "pnl_rs": 286447.5,
+      "pnl_pct": 62.27
+    },
+    "VBL": {
+      "close": 522.15,
+      "pnl_rs": 18505.35,
+      "pnl_pct": 17.41
+    },
+    "VEDL": {
+      "close": 304.25,
+      "pnl_rs": -3807.12,
+      "pnl_pct": -6.71
+    },
+    "YATHARTH": {
+      "close": 817.0,
+      "pnl_rs": 105881.0,
+      "pnl_pct": 55.76
+    },
+    "BEL": {
+      "close": 412.95,
+      "pnl_rs": -245.0,
+      "pnl_pct": -0.59
+    },
+    "ANANT RAJ": {
+      "close": 537.3,
+      "pnl_rs": 860.8,
+      "pnl_pct": 8.71
+    },
+    "ASIAN PAINTS": {
+      "close": 2659.2,
+      "pnl_rs": 1919.9,
+      "pnl_pct": 16.88
+    },
+    "AUTHUM INVEST": {
+      "close": 456.6,
+      "pnl_rs": 542.8,
+      "pnl_pct": 5.45
+    },
+    "BLS INTERNAT": {
+      "close": 262.0,
+      "pnl_rs": 96.4,
+      "pnl_pct": 0.93
+    },
+    "CEMINDIA PROJ": {
+      "close": 1094.4,
+      "pnl_rs": 9637.56,
+      "pnl_pct": 95.79
+    },
+    "COCHINSHIP": {
+      "close": 1407.1,
+      "pnl_rs": -187.11,
+      "pnl_pct": -1.86
+    },
+    "CRISIL": {
+      "close": 3806.0,
+      "pnl_rs": -973.92,
+      "pnl_pct": -11.34
+    },
+    "DIXON": {
+      "close": 11392.0,
+      "pnl_rs": 924.92,
+      "pnl_pct": 8.84
+    },
+    "GODFRYPHLP": {
+      "close": 2183.9,
+      "pnl_rs": 433.82,
+      "pnl_pct": 11.03
+    },
+    "HAL": {
+      "close": 4238.0,
+      "pnl_rs": 980.22,
+      "pnl_pct": 8.35
+    },
+    "HINDUNILVR": {
+      "close": 2110.1,
+      "pnl_rs": -670.35,
+      "pnl_pct": -5.97
+    },
+    "INOXWIND": {
+      "close": 84.51,
+      "pnl_rs": -97.2,
+      "pnl_pct": -0.95
+    },
+    "ITC": {
+      "close": 279.45,
+      "pnl_rs": -993.28,
+      "pnl_pct": -10.0
+    },
+    "MGL": {
+      "close": 1069.7,
+      "pnl_rs": -441.63,
+      "pnl_pct": -4.39
+    },
+    "GOLDBEES_GW": {
+      "close": 124.16,
+      "pnl_rs": -922.36,
+      "pnl_pct": -6.92
+    },
+    "SILVERBEES": {
+      "close": 227.93,
+      "pnl_rs": -1243.89,
+      "pnl_pct": -9.84
+    },
+    "PIIND": {
+      "close": 2680.8,
+      "pnl_rs": -1218.78,
+      "pnl_pct": -13.16
+    },
+    "SUZLON": {
+      "close": 54.43,
+      "pnl_rs": 3682.5,
+      "pnl_pct": 37.1
+    },
+    "TEJASNET": {
+      "close": 542.5,
+      "pnl_rs": 1682.4,
+      "pnl_pct": 34.85
+    },
+    "ZYDUSLIFE": {
+      "close": 1087.6,
+      "pnl_rs": 1933.36,
+      "pnl_pct": 19.28
+    },
+    "TVSMNCRPS": {
+      "close": 10.3,
+      "pnl_rs": 8240.0,
+      "pnl_pct": null
+    },
+    "NATIONALUM": {
+      "close": 378.2,
+      "pnl_rs": -2473.24,
+      "pnl_pct": -8.22
+    },
+    "IEX": {
+      "close": 118.96,
+      "pnl_rs": -3573.74,
+      "pnl_pct": -7.14
+    },
+    "_total_pnl": 1096504.36
+  },
+  "09-Jun-26": {
+    "ASHOKLEY": {
+      "close": 143.9,
+      "pnl_rs": -30333.72,
+      "pnl_pct": -13.45
+    },
+    "BAJFINANCE": {
+      "close": 885.9,
+      "pnl_rs": 2330.8,
+      "pnl_pct": 3.64
+    },
+    "BANKINDIA": {
+      "close": 147.6,
+      "pnl_rs": -4517.63,
+      "pnl_pct": -2.97
+    },
+    "CANBK": {
+      "close": 137.51,
+      "pnl_rs": 63612.48,
+      "pnl_pct": 33.39
+    },
+    "CGPOWER": {
+      "close": 911.2,
+      "pnl_rs": 14567.8,
+      "pnl_pct": 33.3
+    },
+    "CUB": {
+      "close": 257.0,
+      "pnl_rs": 66038.76,
+      "pnl_pct": 17.81
+    },
+    "EICHERMOT": {
+      "close": 7199.5,
+      "pnl_rs": -248.5,
+      "pnl_pct": -0.69
+    },
+    "EIDPARRY": {
+      "close": 735.9,
+      "pnl_rs": -14788.05,
+      "pnl_pct": -19.68
+    },
+    "GOLDBEES": {
+      "close": 125.47,
+      "pnl_rs": 3448.92,
+      "pnl_pct": 0.75
+    },
+    "IDBI": {
+      "close": 75.37,
+      "pnl_rs": -4.98,
+      "pnl_pct": -6.2
+    },
+    "INDIANB": {
+      "close": 874.95,
+      "pnl_rs": 167980.5,
+      "pnl_pct": 55.01
+    },
+    "IOB": {
+      "close": 33.38,
+      "pnl_rs": -8429.51,
+      "pnl_pct": -4.81
+    },
+    "KARURVYSYA": {
+      "close": 285.6,
+      "pnl_rs": 191478.4,
+      "pnl_pct": 53.53
+    },
+    "LICI": {
+      "close": 403.9,
+      "pnl_rs": 2359.72,
+      "pnl_pct": 4.94
+    },
+    "M&M": {
+      "close": 2990.1,
+      "pnl_rs": 172315.2,
+      "pnl_pct": 31.6
+    },
+    "MANAPPURAM": {
+      "close": 307.9,
+      "pnl_rs": 81780.0,
+      "pnl_pct": 79.43
+    },
+    "MAXHEALTH": {
+      "close": 1003.1,
+      "pnl_rs": 10953.0,
+      "pnl_pct": 18.48
+    },
+    "NH": {
+      "close": 1941.8,
+      "pnl_rs": 4667.5,
+      "pnl_pct": 5.05
+    },
+    "PTC": {
+      "close": 187.0,
+      "pnl_rs": 46836.21,
+      "pnl_pct": 9.11
+    },
+    "SBIN": {
+      "close": 1002.7,
+      "pnl_rs": 12787.4,
+      "pnl_pct": 36.18
+    },
+    "SILVERCASE": {
+      "close": 24.6,
+      "pnl_rs": 12009.37,
+      "pnl_pct": 1.6
+    },
+    "TMCV": {
+      "close": 364.6,
+      "pnl_rs": 57945.7,
+      "pnl_pct": 46.6
+    },
+    "TMPV": {
+      "close": 387.2,
+      "pnl_rs": -95199.95,
+      "pnl_pct": -28.93
+    },
+    "TVSMOTOR": {
+      "close": 3358.0,
+      "pnl_rs": 295537.5,
+      "pnl_pct": 64.25
+    },
+    "VBL": {
+      "close": 529.75,
+      "pnl_rs": 20321.75,
+      "pnl_pct": 19.12
+    },
+    "VEDL": {
+      "close": 306.25,
+      "pnl_rs": -3459.12,
+      "pnl_pct": -6.1
+    },
+    "YATHARTH": {
+      "close": 839.1,
+      "pnl_rs": 113881.2,
+      "pnl_pct": 59.98
+    },
+    "BEL": {
+      "close": 412.05,
+      "pnl_rs": -335.0,
+      "pnl_pct": -0.81
+    },
+    "ANANT RAJ": {
+      "close": 540.75,
+      "pnl_rs": 929.8,
+      "pnl_pct": 9.41
+    },
+    "ASIAN PAINTS": {
+      "close": 2708.1,
+      "pnl_rs": 2164.4,
+      "pnl_pct": 19.03
+    },
+    "AUTHUM INVEST": {
+      "close": 470.7,
+      "pnl_rs": 867.1,
+      "pnl_pct": 8.71
+    },
+    "BLS INTERNAT": {
+      "close": 264.05,
+      "pnl_rs": 178.4,
+      "pnl_pct": 1.72
+    },
+    "CEMINDIA PROJ": {
+      "close": 1203.8,
+      "pnl_rs": 11606.76,
+      "pnl_pct": 115.36
+    },
+    "COCHINSHIP": {
+      "close": 1441.2,
+      "pnl_rs": 51.59,
+      "pnl_pct": 0.51
+    },
+    "CRISIL": {
+      "close": 3859.2,
+      "pnl_rs": -867.52,
+      "pnl_pct": -10.1
+    },
+    "DIXON": {
+      "close": 11611.0,
+      "pnl_rs": 1143.92,
+      "pnl_pct": 10.93
+    },
+    "GODFRYPHLP": {
+      "close": 2263.2,
+      "pnl_rs": 592.42,
+      "pnl_pct": 15.06
+    },
+    "HAL": {
+      "close": 4263.8,
+      "pnl_rs": 1057.62,
+      "pnl_pct": 9.01
+    },
+    "HINDUNILVR": {
+      "close": 2132.8,
+      "pnl_rs": -556.85,
+      "pnl_pct": -4.96
+    },
+    "INOXWIND": {
+      "close": 86.14,
+      "pnl_rs": 98.4,
+      "pnl_pct": 0.96
+    },
+    "ITC": {
+      "close": 280.0,
+      "pnl_rs": -975.68,
+      "pnl_pct": -9.82
+    },
+    "MGL": {
+      "close": 1059.1,
+      "pnl_rs": -537.03,
+      "pnl_pct": -5.33
+    },
+    "GOLDBEES_GW": {
+      "close": 125.39,
+      "pnl_rs": -799.36,
+      "pnl_pct": -5.99
+    },
+    "SILVERBEES": {
+      "close": 231.9,
+      "pnl_rs": -1045.39,
+      "pnl_pct": -8.27
+    },
+    "PIIND": {
+      "close": 2866.4,
+      "pnl_rs": -661.98,
+      "pnl_pct": -7.15
+    },
+    "SUZLON": {
+      "close": 55.23,
+      "pnl_rs": 3882.5,
+      "pnl_pct": 39.12
+    },
+    "TEJASNET": {
+      "close": 540.55,
+      "pnl_rs": 1659.0,
+      "pnl_pct": 34.36
+    },
+    "ZYDUSLIFE": {
+      "close": 1105.6,
+      "pnl_rs": 2131.36,
+      "pnl_pct": 21.25
+    },
+    "TVSMNCRPS": {
+      "close": 10.3,
+      "pnl_rs": 8240.0,
+      "pnl_pct": null
+    },
+    "NATIONALUM": {
+      "close": 383.9,
+      "pnl_rs": -2057.14,
+      "pnl_pct": -6.84
+    },
+    "IEX": {
+      "close": 120.06,
+      "pnl_rs": -3143.64,
+      "pnl_pct": -6.28
+    },
+    "_total_pnl": 1207494.43
+  },
+  "10-Jun-26": {
+    "ASHOKLEY": {
+      "close": 141.2,
+      "pnl_rs": -33994.92,
+      "pnl_pct": -15.08
+    },
+    "BAJFINANCE": {
+      "close": 885.0,
+      "pnl_rs": 2263.3,
+      "pnl_pct": 3.53
+    },
+    "BANKINDIA": {
+      "close": 144.65,
+      "pnl_rs": -7467.63,
+      "pnl_pct": -4.91
+    },
+    "CANBK": {
+      "close": 133.46,
+      "pnl_rs": 56128.08,
+      "pnl_pct": 29.46
+    },
+    "CGPOWER": {
+      "close": 908.1,
+      "pnl_rs": 14369.4,
+      "pnl_pct": 32.85
+    },
+    "CUB": {
+      "close": 254.1,
+      "pnl_rs": 61108.76,
+      "pnl_pct": 16.48
+    },
+    "EICHERMOT": {
+      "close": 7191.5,
+      "pnl_rs": -288.5,
+      "pnl_pct": -0.8
+    },
+    "EIDPARRY": {
+      "close": 723.25,
+      "pnl_rs": -15825.35,
+      "pnl_pct": -21.06
+    },
+    "GOLDBEES": {
+      "close": 121.12,
+      "pnl_rs": -12646.08,
+      "pnl_pct": -2.74
+    },
+    "IDBI": {
+      "close": 74.93,
+      "pnl_rs": -5.42,
+      "pnl_pct": -6.75
+    },
+    "INDIANB": {
+      "close": 833.45,
+      "pnl_rs": 145529.0,
+      "pnl_pct": 47.66
+    },
+    "IOB": {
+      "close": 33.21,
+      "pnl_rs": -9279.51,
+      "pnl_pct": -5.29
+    },
+    "KARURVYSYA": {
+      "close": 272.7,
+      "pnl_rs": 166671.7,
+      "pnl_pct": 46.59
+    },
+    "LICI": {
+      "close": 395.95,
+      "pnl_rs": 1373.92,
+      "pnl_pct": 2.88
+    },
+    "M&M": {
+      "close": 2952.5,
+      "pnl_rs": 163291.2,
+      "pnl_pct": 29.94
+    },
+    "MANAPPURAM": {
+      "close": 289.25,
+      "pnl_rs": 70590.0,
+      "pnl_pct": 68.56
+    },
+    "MAXHEALTH": {
+      "close": 1010.1,
+      "pnl_rs": 11443.0,
+      "pnl_pct": 19.31
+    },
+    "NH": {
+      "close": 1902.65,
+      "pnl_rs": 2710.0,
+      "pnl_pct": 2.93
+    },
+    "PTC": {
+      "close": 181.49,
+      "pnl_rs": 30306.21,
+      "pnl_pct": 5.89
+    },
+    "SBIN": {
+      "close": 1003.25,
+      "pnl_rs": 12813.8,
+      "pnl_pct": 36.26
+    },
+    "SILVERCASE": {
+      "close": 23.45,
+      "pnl_rs": -23640.63,
+      "pnl_pct": -3.15
+    },
+    "TMCV": {
+      "close": 365.0,
+      "pnl_rs": 58145.7,
+      "pnl_pct": 46.76
+    },
+    "TMPV": {
+      "close": 380.1,
+      "pnl_rs": -99488.35,
+      "pnl_pct": -30.23
+    },
+    "TVSMOTOR": {
+      "close": 3334.9,
+      "pnl_rs": 290340.0,
+      "pnl_pct": 63.12
+    },
+    "VBL": {
+      "close": 526.25,
+      "pnl_rs": 19485.25,
+      "pnl_pct": 18.33
+    },
+    "VEDL": {
+      "close": 299.3,
+      "pnl_rs": -4668.42,
+      "pnl_pct": -8.23
+    },
+    "YATHARTH": {
+      "close": 830.05,
+      "pnl_rs": 110605.1,
+      "pnl_pct": 58.25
+    },
+    "BEL": {
+      "close": 408.35,
+      "pnl_rs": -705.0,
+      "pnl_pct": -1.7
+    },
+    "ANANT RAJ": {
+      "close": 519.35,
+      "pnl_rs": 501.8,
+      "pnl_pct": 5.08
+    },
+    "ASIAN PAINTS": {
+      "close": 2715.1,
+      "pnl_rs": 2199.4,
+      "pnl_pct": 19.33
+    },
+    "AUTHUM INVEST": {
+      "close": 465.15,
+      "pnl_rs": 739.45,
+      "pnl_pct": 7.42
+    },
+    "BLS INTERNAT": {
+      "close": 253.65,
+      "pnl_rs": -237.6,
+      "pnl_pct": -2.29
+    },
+    "CEMINDIA PROJ": {
+      "close": 1237.1,
+      "pnl_rs": 12206.16,
+      "pnl_pct": 121.31
+    },
+    "COCHINSHIP": {
+      "close": 1404.2,
+      "pnl_rs": -207.41,
+      "pnl_pct": -2.07
+    },
+    "CRISIL": {
+      "close": 4003.3,
+      "pnl_rs": -579.32,
+      "pnl_pct": -6.75
+    },
+    "DIXON": {
+      "close": 11487.0,
+      "pnl_rs": 1019.92,
+      "pnl_pct": 9.74
+    },
+    "GODFRYPHLP": {
+      "close": 2234.6,
+      "pnl_rs": 535.22,
+      "pnl_pct": 13.61
+    },
+    "HAL": {
+      "close": 4219.2,
+      "pnl_rs": 923.82,
+      "pnl_pct": 7.87
+    },
+    "HINDUNILVR": {
+      "close": 2169.5,
+      "pnl_rs": -373.35,
+      "pnl_pct": -3.33
+    },
+    "INOXWIND": {
+      "close": 82.73,
+      "pnl_rs": -310.8,
+      "pnl_pct": -3.04
+    },
+    "ITC": {
+      "close": 283.65,
+      "pnl_rs": -858.88,
+      "pnl_pct": -8.64
+    },
+    "MGL": {
+      "close": 1080.5,
+      "pnl_rs": -344.43,
+      "pnl_pct": -3.42
+    },
+    "GOLDBEES_GW": {
+      "close": 121.15,
+      "pnl_rs": -1223.36,
+      "pnl_pct": -9.17
+    },
+    "SILVERBEES": {
+      "close": 220.59,
+      "pnl_rs": -1610.89,
+      "pnl_pct": -12.74
+    },
+    "PIIND": {
+      "close": 2807.7,
+      "pnl_rs": -838.08,
+      "pnl_pct": -9.05
+    },
+    "SUZLON": {
+      "close": 54.08,
+      "pnl_rs": 3595.0,
+      "pnl_pct": 36.22
+    },
+    "TEJASNET": {
+      "close": 550.8,
+      "pnl_rs": 1782.0,
+      "pnl_pct": 36.91
+    },
+    "ZYDUSLIFE": {
+      "close": 1098.3,
+      "pnl_rs": 2051.06,
+      "pnl_pct": 20.45
+    },
+    "TVSMNCRPS": {
+      "close": 10.3,
+      "pnl_rs": 8240.0,
+      "pnl_pct": null
+    },
+    "NATIONALUM": {
+      "close": 376.15,
+      "pnl_rs": -2622.89,
+      "pnl_pct": -8.72
+    },
+    "IEX": {
+      "close": 118.75,
+      "pnl_rs": -3655.85,
+      "pnl_pct": -7.3
+    },
+    "_total_pnl": 1030095.58
   }
 }

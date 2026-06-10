@@ -1750,7 +1750,7 @@ function renderWlRows(rows) {
     return;
   }
   tbody.innerHTML = rows.map(r => {
-    const name = r.symbol.replace(/\.(NS|BO)$/i, '');
+    const name = r.symbol.replace(/\\.(NS|BO)$/i, '');
     return `
     <tr>
       <td class="fw-bold">${name}<br><span style="font-size:.7rem;color:#888;font-weight:400">${r.symbol}</span></td>
