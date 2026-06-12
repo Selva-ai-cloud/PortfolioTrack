@@ -541,8 +541,8 @@ HTML = """<!DOCTYPE html>
   .green-tbl thead th{background:#567044}
   .red-tbl   thead th{background:#e06235}
 
-  /* ── Chart container — explicit height so maintainAspectRatio:false works ── */
-  .chart-wrap{position:relative;height:340px}
+  /* ── Chart container — clamp scales height with viewport ── */
+  .chart-wrap{position:relative;height:clamp(200px,38vw,340px)}
 
   /* ── Right-align numeric cells (design system: components-holdings-table.html) ── */
   .r{text-align:right}
@@ -598,7 +598,7 @@ HTML = """<!DOCTYPE html>
   .icon-btn:active{transform:scale(.95)}
 
   /* ── Holdings / Technical tab switcher ── */
-  .card-tabs{display:flex;gap:0;align-items:stretch}
+  .card-tabs{display:flex;gap:0;align-items:stretch;overflow-x:auto;-webkit-overflow-scrolling:touch}
   .card-tab{padding:9px 18px;font-size:.85rem;font-weight:600;cursor:pointer;
             background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);
             border:none;border-right:1px solid rgba(255,255,255,.15);
@@ -644,7 +644,7 @@ HTML = """<!DOCTYPE html>
   .wl-add-bar{display:flex;align-items:center;gap:8px;padding:8px 16px;
               background:#eef0f4;border-bottom:1px solid #dde2ea;flex-wrap:wrap}
   .wl-sym-input{font-size:.8rem;padding:4px 10px;border:1.5px solid #c0cfe0;border-radius:8px;
-                width:220px;outline:none;font-family:inherit}
+                width:220px;max-width:100%;outline:none;font-family:inherit}
   .wl-sym-input:focus{border-color:#1F3864;box-shadow:0 0 0 2px rgba(31,56,100,.12)}
   .wl-add-btn{font-size:.8rem;background:#567044;color:#fff;border:none;border-radius:8px;
               padding:4px 14px;cursor:pointer;font-weight:600;transition:background .15s}
@@ -659,7 +659,14 @@ HTML = """<!DOCTYPE html>
   .dma-refresh-btn:hover{background:#16305a;border-color:#16305a}
   .dma-loading{text-align:center;padding:24px;color:#777;font-size:.9rem}
 
-  /* ── Mobile breakpoints ── */
+  /* ── Tablet breakpoint (576–991px) ── */
+  @media (max-width: 991px) {
+    .hero{padding:14px 16px}
+    .card-hdr,.card-hdr-green,.card-hdr-red{font-size:.85rem;padding:9px 14px}
+    .container-fluid{padding-left:10px!important;padding-right:10px!important}
+  }
+
+  /* ── Mobile breakpoint (<576px) ── */
   @media (max-width: 575px) {
     body{font-size:.8rem}
     .topbar{padding:8px 12px;gap:8px}
@@ -669,16 +676,15 @@ HTML = """<!DOCTYPE html>
     .hero-tbl{font-size:.74rem}
     .hero-tbl th,.hero-tbl td{padding:3px 5px}
     .card-hdr,.card-hdr-green,.card-hdr-red{font-size:.8rem;padding:8px 12px}
-    .card-tabs{overflow-x:auto}
     .card-tab{padding:7px 12px;font-size:.78rem}
-    .chart-wrap{height:220px}
     .container-fluid{padding-left:8px!important;padding-right:8px!important}
     table thead th{padding:6px 7px;font-size:.72rem}
     table td{padding:5px 7px;font-size:.78rem}
     .filter-bar,.wl-add-bar,.stock-sel-bar{padding:6px 10px;gap:5px}
     .scanner-summary-bar{padding:6px 10px;gap:6px}
-    .wl-sym-input{width:160px}
+    .wl-sym-input{width:140px}
     .tbl-wrap{max-height:360px}
+    .row.g-3{--bs-gutter-x:0.75rem;--bs-gutter-y:0.75rem}
   }
 </style>
 </head>
@@ -727,7 +733,7 @@ HTML = """<!DOCTYPE html>
 
   <!-- Gainers / Losers -->
   <div class="row g-3 mb-3">
-    <div class="col-lg-6">
+    <div class="col-12 col-md-6">
       <div class="card">
         <div class="card-hdr-green">📈 Top 3 Gainers — Today's Move</div>
         <div class="p-0 table-responsive">
@@ -752,7 +758,7 @@ HTML = """<!DOCTYPE html>
         </div>
       </div>
     </div>
-    <div class="col-lg-6">
+    <div class="col-12 col-md-6">
       <div class="card">
         <div class="card-hdr-red">📉 Top 3 Losers — Today's Move</div>
         <div class="p-0 table-responsive">
@@ -781,7 +787,7 @@ HTML = """<!DOCTYPE html>
 
   <!-- All-Time Top 3 Gainers / Losers -->
   <div class="row g-3 mb-3">
-    <div class="col-lg-6">
+    <div class="col-12 col-md-6">
       <div class="card">
         <div class="card-hdr-green">🏆 All-Time Top 3 Gainers (vs Avg Buy)</div>
         <div class="p-0 table-responsive">
@@ -796,7 +802,7 @@ HTML = """<!DOCTYPE html>
         </div>
       </div>
     </div>
-    <div class="col-lg-6">
+    <div class="col-12 col-md-6">
       <div class="card">
         <div class="card-hdr-red">💔 All-Time Top 3 Losers (vs Avg Buy)</div>
         <div class="p-0 table-responsive">
