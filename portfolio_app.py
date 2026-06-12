@@ -384,13 +384,19 @@ def dashboard():
         for s, p in scored_desc[-3:][::-1]
     ]
 
-    # Chart data: {date: {stock: pnl_pct}}
-    chart_data = {}
+    # Chart data: {date: {stock: pnl_pct}} + parallel close prices for tooltip
+    chart_data  = {}
+    chart_close = {}
     for d in dates:
         chart_data[d] = {
             s: v.get("pnl_pct")
             for s, v in history[d].items()
             if s != "_total_pnl" and v.get("pnl_pct") is not None
+        }
+        chart_close[d] = {
+            s: v.get("close")
+            for s, v in history[d].items()
+            if s != "_total_pnl" and v.get("close") is not None
         }
 
     return render_template_string(
@@ -401,6 +407,7 @@ def dashboard():
         losers=losers,
         holdings=holdings,
         chart_data=chart_data,
+        chart_close=chart_close,
         dates=dates,
         stocks=sorted(holdings.keys()),
         last_updated=last_updated,
@@ -1155,8 +1162,9 @@ HTML = """<!DOCTYPE html>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 // ── Raw data from server ───────────────────────────────────────────────────
-const rawData = {{ chart_data | tojson }};
-const dates   = {{ dates      | tojson }};
+const rawData  = {{ chart_data  | tojson }};
+const rawClose = {{ chart_close | tojson }};
+const dates    = {{ dates       | tojson }};
 const stocks  = {{ stocks     | tojson }};
 const allRows = {{ rows       | tojson }};
 
@@ -1185,8 +1193,13 @@ const CHART_OPTIONS = {
     legend: { display: false },   // ← legends removed
     tooltip: {
       callbacks: {
-        label: ctx => `${ctx.dataset.label}: ${
-          ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + '%' : 'N/A'}`
+        label: ctx => {
+          const pct   = ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + '%' : 'N/A';
+          const date  = ctx.label;
+          const close = rawClose[date] ? rawClose[date][ctx.dataset.label] : null;
+          const px    = close != null ? '  ₹' + close.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '';
+          return `${ctx.dataset.label}: ${pct}${px}`;
+        }
       }
     }
   },
