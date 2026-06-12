@@ -471,9 +471,9 @@ HTML = """<!DOCTYPE html>
 
   /* ── Topbar ── */
   .topbar{background:#1F3864;color:#fff;padding:10px 20px;display:flex;align-items:center;gap:12px;
-          box-shadow:0 2px 6px rgba(0,0,0,.3)}
+          box-shadow:0 2px 6px rgba(0,0,0,.3);flex-wrap:wrap}
   .topbar .brand{font-size:1.1rem;font-weight:700;letter-spacing:.5px}
-  .topbar .updated{opacity:.6;font-size:.8rem;flex:1}
+  .topbar .updated{opacity:.6;font-size:.8rem;flex:1;min-width:120px}
 
   /* ── Cards ── */
   .card{border:none;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.09)}
@@ -517,7 +517,7 @@ HTML = """<!DOCTYPE html>
                  font-variant-numeric:tabular-nums;font-feature-settings:'tnum'}
   table td{vertical-align:middle;padding:6px 10px;border-color:#e8e8e8;
            font-variant-numeric:tabular-nums;font-feature-settings:'tnum'}
-  .tbl-wrap{max-height:480px;overflow-y:auto;border-radius:0 0 10px 10px}
+  .tbl-wrap{max-height:480px;overflow-y:auto;overflow-x:auto;border-radius:0 0 10px 10px}
   .total-row td{background:#1F3864!important;color:#fff!important;font-weight:700}
 
   /* ── Exchange chips ── */
@@ -658,6 +658,28 @@ HTML = """<!DOCTYPE html>
                    cursor:pointer;transition:all .15s;white-space:nowrap;font-weight:500}
   .dma-refresh-btn:hover{background:#16305a;border-color:#16305a}
   .dma-loading{text-align:center;padding:24px;color:#777;font-size:.9rem}
+
+  /* ── Mobile breakpoints ── */
+  @media (max-width: 575px) {
+    body{font-size:.8rem}
+    .topbar{padding:8px 12px;gap:8px}
+    .topbar .brand{font-size:.95rem}
+    .topbar .updated{display:none}
+    .hero{padding:12px 14px;border-radius:8px}
+    .hero-tbl{font-size:.74rem}
+    .hero-tbl th,.hero-tbl td{padding:3px 5px}
+    .card-hdr,.card-hdr-green,.card-hdr-red{font-size:.8rem;padding:8px 12px}
+    .card-tabs{overflow-x:auto}
+    .card-tab{padding:7px 12px;font-size:.78rem}
+    .chart-wrap{height:220px}
+    .container-fluid{padding-left:8px!important;padding-right:8px!important}
+    table thead th{padding:6px 7px;font-size:.72rem}
+    table td{padding:5px 7px;font-size:.78rem}
+    .filter-bar,.wl-add-bar,.stock-sel-bar{padding:6px 10px;gap:5px}
+    .scanner-summary-bar{padding:6px 10px;gap:6px}
+    .wl-sym-input{width:160px}
+    .tbl-wrap{max-height:360px}
+  }
 </style>
 </head>
 <body>
@@ -688,6 +710,7 @@ HTML = """<!DOCTYPE html>
       <span style="margin-left:auto;font-size:.78rem;opacity:.65" id="stock-count">{{ rows|length }} stocks</span>
     </div>
     <!-- Broker-wise summary table -->
+    <div style="overflow-x:auto">
     <table class="hero-tbl">
       <thead>
         <tr>
@@ -699,6 +722,7 @@ HTML = """<!DOCTYPE html>
         <!-- rendered by JS -->
       </tbody>
     </table>
+    </div>
   </div>
 
   <!-- Gainers / Losers -->
@@ -706,7 +730,7 @@ HTML = """<!DOCTYPE html>
     <div class="col-lg-6">
       <div class="card">
         <div class="card-hdr-green">📈 Top 3 Gainers — Today's Move</div>
-        <div class="p-0">
+        <div class="p-0 table-responsive">
           <table class="table table-sm mb-0 mover-card green-tbl">
             <thead><tr>
               <th>Stock</th><th class="r">Prev ₹</th><th class="r">Today ₹</th><th class="r">Chg ₹</th><th class="r">Chg %</th>
@@ -731,7 +755,7 @@ HTML = """<!DOCTYPE html>
     <div class="col-lg-6">
       <div class="card">
         <div class="card-hdr-red">📉 Top 3 Losers — Today's Move</div>
-        <div class="p-0">
+        <div class="p-0 table-responsive">
           <table class="table table-sm mb-0 mover-card red-tbl">
             <thead><tr>
               <th>Stock</th><th class="r">Prev ₹</th><th class="r">Today ₹</th><th class="r">Chg ₹</th><th class="r">Chg %</th>
@@ -760,7 +784,7 @@ HTML = """<!DOCTYPE html>
     <div class="col-lg-6">
       <div class="card">
         <div class="card-hdr-green">🏆 All-Time Top 3 Gainers (vs Avg Buy)</div>
-        <div class="p-0">
+        <div class="p-0 table-responsive">
           <table class="table table-sm mb-0 mover-card green-tbl">
             <thead><tr>
               <th>Stock</th><th class="r">Avg ₹</th><th class="r">Close ₹</th><th class="r">P&amp;L ₹</th><th class="r">P&amp;L %</th>
@@ -775,7 +799,7 @@ HTML = """<!DOCTYPE html>
     <div class="col-lg-6">
       <div class="card">
         <div class="card-hdr-red">💔 All-Time Top 3 Losers (vs Avg Buy)</div>
-        <div class="p-0">
+        <div class="p-0 table-responsive">
           <table class="table table-sm mb-0 mover-card red-tbl">
             <thead><tr>
               <th>Stock</th><th class="r">Avg ₹</th><th class="r">Close ₹</th><th class="r">P&amp;L ₹</th><th class="r">P&amp;L %</th>
@@ -798,7 +822,7 @@ HTML = """<!DOCTYPE html>
     <div class="scanner-summary-bar" id="scanner-pills">
       <span style="font-size:.78rem;color:#555">Loading signals…</span>
     </div>
-    <div class="tbl-wrap" style="max-height:320px">
+    <div class="tbl-wrap" style="max-height:320px;overflow-x:auto">
       <table class="table table-hover table-sm mb-0" id="scanner-table">
         <thead>
           <tr>
