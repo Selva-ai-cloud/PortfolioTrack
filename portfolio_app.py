@@ -834,13 +834,13 @@ HTML = """<!DOCTYPE html>
           <tr>
             <th>Stock</th>
             <th class="r">CMP ₹</th>
-            <th class="r">20 EMA</th>
-            <th class="r">EMA Dist %</th>
+            <th class="r d-none d-md-table-cell">20 EMA</th>
+            <th class="r d-none d-md-table-cell">EMA Dist %</th>
             <th class="r">RSI 14</th>
-            <th class="r">50 DMA</th>
-            <th class="r">200 DMA</th>
-            <th>200 Slope</th>
-            <th class="r">Stop ₹</th>
+            <th class="r d-none d-md-table-cell">50 DMA</th>
+            <th class="r d-none d-md-table-cell">200 DMA</th>
+            <th class="d-none d-md-table-cell">200 Slope</th>
+            <th class="r d-none d-md-table-cell">Stop ₹</th>
             <th>Signal</th>
           </tr>
         </thead>
@@ -891,12 +891,12 @@ HTML = """<!DOCTYPE html>
         <thead>
           <tr>
             <th class="sortable" data-col="stock"    onclick="sortTable('stock')"   >Stock    <span class="si"></span></th>
-            <th class="sortable" data-col="exchange" onclick="sortTable('exchange')" >Exch     <span class="si"></span></th>
-            <th class="sortable" data-col="broker"   onclick="sortTable('broker')"  >Broker   <span class="si"></span></th>
-            <th class="sortable r" data-col="qty"    onclick="sortTable('qty')"     >Qty      <span class="si"></span></th>
-            <th class="sortable r" data-col="avg"    onclick="sortTable('avg')"     >Avg ₹    <span class="si"></span></th>
+            <th class="sortable d-none d-md-table-cell" data-col="exchange" onclick="sortTable('exchange')" >Exch     <span class="si"></span></th>
+            <th class="sortable d-none d-md-table-cell" data-col="broker"   onclick="sortTable('broker')"  >Broker   <span class="si"></span></th>
+            <th class="sortable r d-none d-md-table-cell" data-col="qty"    onclick="sortTable('qty')"     >Qty      <span class="si"></span></th>
+            <th class="sortable r d-none d-md-table-cell" data-col="avg"    onclick="sortTable('avg')"     >Avg ₹    <span class="si"></span></th>
             <th class="sortable r" data-col="close"  onclick="sortTable('close')"   >Close ₹  <span class="si"></span></th>
-            <th class="sortable r" data-col="pnl_rs" onclick="sortTable('pnl_rs')"  >P&amp;L ₹ <span class="si"></span></th>
+            <th class="sortable r d-none d-md-table-cell" data-col="pnl_rs" onclick="sortTable('pnl_rs')"  >P&amp;L ₹ <span class="si"></span></th>
             <th class="sortable r" data-col="pnl_pct"onclick="sortTable('pnl_pct')" >P&amp;L % <span class="si"></span></th>
             <th class="sortable r" data-col="day_chg"onclick="sortTable('day_chg')" >Day %    <span class="si"></span></th>
             <th>Actions</th>
@@ -911,12 +911,12 @@ HTML = """<!DOCTYPE html>
           {% else %}{% set rc = '' %}{% endif %}
           <tr class="{{ rc }}" data-broker="{{ r.broker }}" data-stock="{{ r.stock }}">
             <td class="fw-bold">{{ r.stock }}</td>
-            <td><span class="badge-{{ r.exchange|lower }}">{{ r.exchange }}</span></td>
-            <td>{{ r.broker }}</td>
-            <td class="r">{{ r.qty|int|string }}</td>
-            <td class="r">₹{{ '{:,.2f}'.format(r.avg) }}</td>
+            <td class="d-none d-md-table-cell"><span class="badge-{{ r.exchange|lower }}">{{ r.exchange }}</span></td>
+            <td class="d-none d-md-table-cell">{{ r.broker }}</td>
+            <td class="r d-none d-md-table-cell">{{ r.qty|int|string }}</td>
+            <td class="r d-none d-md-table-cell">₹{{ '{:,.2f}'.format(r.avg) }}</td>
             <td class="r">{{ '₹{:,.2f}'.format(r.close) if r.close else 'N/A' }}</td>
-            <td class="r {{ 'pos' if r.pnl_rs and r.pnl_rs > 0 else ('neg' if r.pnl_rs and r.pnl_rs < 0 else '') }}">
+            <td class="r d-none d-md-table-cell {{ 'pos' if r.pnl_rs and r.pnl_rs > 0 else ('neg' if r.pnl_rs and r.pnl_rs < 0 else '') }}">
               {% if r.pnl_rs is not none %}{{ '+' if r.pnl_rs >= 0 else '' }}₹{{ '{:,.0f}'.format(r.pnl_rs) }}{% else %}N/A{% endif %}
             </td>
             <td class="r {{ 'pos' if r.pnl_pct and r.pnl_pct > 0 else ('neg' if r.pnl_pct and r.pnl_pct < 0 else '') }}">
@@ -988,15 +988,15 @@ HTML = """<!DOCTYPE html>
             <tr>
               <th class="sortable" onclick="sortDmaTable('stock')">Stock <span class="si"></span></th>
               <th class="r sortable" onclick="sortDmaTable('cmp')">CMP ₹ <span class="si"></span></th>
-              <th class="r sortable" onclick="sortDmaTable('ema20')">20 EMA <span class="si"></span></th>
-              <th class="r sortable" onclick="sortDmaTable('ema_dist_pct')">EMA Dist % <span class="si"></span></th>
+              <th class="r sortable d-none d-md-table-cell" onclick="sortDmaTable('ema20')">20 EMA <span class="si"></span></th>
+              <th class="r sortable d-none d-md-table-cell" onclick="sortDmaTable('ema_dist_pct')">EMA Dist % <span class="si"></span></th>
               <th class="r sortable" onclick="sortDmaTable('rsi14')">RSI 14 <span class="si"></span></th>
-              <th class="r sortable" onclick="sortDmaTable('dma50')">50 DMA <span class="si"></span></th>
-              <th class="r sortable" onclick="sortDmaTable('dma200')">200 DMA <span class="si"></span></th>
-              <th class="sortable" onclick="sortDmaTable('dma200_slope')">200 Slope <span class="si"></span></th>
-              <th class="sortable" onclick="sortDmaTable('cross')">Cross <span class="si"></span></th>
+              <th class="r sortable d-none d-md-table-cell" onclick="sortDmaTable('dma50')">50 DMA <span class="si"></span></th>
+              <th class="r sortable d-none d-md-table-cell" onclick="sortDmaTable('dma200')">200 DMA <span class="si"></span></th>
+              <th class="sortable d-none d-md-table-cell" onclick="sortDmaTable('dma200_slope')">200 Slope <span class="si"></span></th>
+              <th class="sortable d-none d-md-table-cell" onclick="sortDmaTable('cross')">Cross <span class="si"></span></th>
               <th class="sortable" onclick="sortDmaTable('signal')">Signal <span class="si"></span></th>
-              <th class="r sortable" onclick="sortDmaTable('stop')">Stop ₹ <span class="si"></span></th>
+              <th class="r sortable d-none d-md-table-cell" onclick="sortDmaTable('stop')">Stop ₹ <span class="si"></span></th>
             </tr>
           </thead>
           <tbody id="dma-tbody">
@@ -1024,15 +1024,15 @@ HTML = """<!DOCTYPE html>
             <tr>
               <th class="sortable" onclick="sortWlTable('symbol')">Symbol <span class="si"></span></th>
               <th class="r sortable" onclick="sortWlTable('cmp')">CMP ₹ <span class="si"></span></th>
-              <th class="r sortable" onclick="sortWlTable('ema20')">20 EMA <span class="si"></span></th>
-              <th class="r sortable" onclick="sortWlTable('ema_dist_pct')">EMA Dist % <span class="si"></span></th>
+              <th class="r sortable d-none d-md-table-cell" onclick="sortWlTable('ema20')">20 EMA <span class="si"></span></th>
+              <th class="r sortable d-none d-md-table-cell" onclick="sortWlTable('ema_dist_pct')">EMA Dist % <span class="si"></span></th>
               <th class="r sortable" onclick="sortWlTable('rsi14')">RSI 14 <span class="si"></span></th>
-              <th class="r sortable" onclick="sortWlTable('dma50')">50 DMA <span class="si"></span></th>
-              <th class="r sortable" onclick="sortWlTable('dma200')">200 DMA <span class="si"></span></th>
-              <th class="sortable" onclick="sortWlTable('dma200_slope')">200 Slope <span class="si"></span></th>
-              <th class="sortable" onclick="sortWlTable('cross')">Cross <span class="si"></span></th>
+              <th class="r sortable d-none d-md-table-cell" onclick="sortWlTable('dma50')">50 DMA <span class="si"></span></th>
+              <th class="r sortable d-none d-md-table-cell" onclick="sortWlTable('dma200')">200 DMA <span class="si"></span></th>
+              <th class="sortable d-none d-md-table-cell" onclick="sortWlTable('dma200_slope')">200 Slope <span class="si"></span></th>
+              <th class="sortable d-none d-md-table-cell" onclick="sortWlTable('cross')">Cross <span class="si"></span></th>
               <th class="sortable" onclick="sortWlTable('signal')">Signal <span class="si"></span></th>
-              <th class="r sortable" onclick="sortWlTable('stop')">Stop ₹ <span class="si"></span></th>
+              <th class="r sortable d-none d-md-table-cell" onclick="sortWlTable('stop')">Stop ₹ <span class="si"></span></th>
               <th></th>
             </tr>
           </thead>
@@ -1641,15 +1641,15 @@ function renderDmaTable(rows) {
     <tr data-broker="${r.broker}">
       <td class="fw-bold">${r.stock}</td>
       <td class="r">${fmt(r.cmp)}</td>
-      <td class="r ${dmaClass(r.cmp, r.ema20)}">${fmt(r.ema20)}</td>
-      <td class="r">${distHtml(r.ema_dist_pct)}</td>
+      <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.ema20)}">${fmt(r.ema20)}</td>
+      <td class="r d-none d-md-table-cell">${distHtml(r.ema_dist_pct)}</td>
       <td class="r">${rsiHtml(r.rsi14)}</td>
-      <td class="r ${dmaClass(r.cmp, r.dma50)}">${fmt(r.dma50)}</td>
-      <td class="r ${dmaClass(r.cmp, r.dma200)}">${fmt(r.dma200)}</td>
-      <td>${slopeHtml(r.dma200_slope)}</td>
-      <td>${crossHtml(r.cross)}</td>
+      <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.dma50)}">${fmt(r.dma50)}</td>
+      <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.dma200)}">${fmt(r.dma200)}</td>
+      <td class="d-none d-md-table-cell">${slopeHtml(r.dma200_slope)}</td>
+      <td class="d-none d-md-table-cell">${crossHtml(r.cross)}</td>
       <td>${signalHtml(r.signal)}</td>
-      <td class="r" style="color:#888">${fmt(r.stop)}</td>
+      <td class="r d-none d-md-table-cell" style="color:#888">${fmt(r.stop)}</td>
     </tr>`).join('');
 }
 
@@ -1704,13 +1704,13 @@ function renderScanner(data) {
     <tr>
       <td class="fw-bold">${r.stock}</td>
       <td class="r">${fmt(r.cmp)}</td>
-      <td class="r ${dmaClass(r.cmp, r.ema20)}">${fmt(r.ema20)}</td>
-      <td class="r">${distHtml(r.ema_dist_pct)}</td>
+      <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.ema20)}">${fmt(r.ema20)}</td>
+      <td class="r d-none d-md-table-cell">${distHtml(r.ema_dist_pct)}</td>
       <td class="r">${rsiHtml(r.rsi14)}</td>
-      <td class="r ${dmaClass(r.cmp, r.dma50)}">${fmt(r.dma50)}</td>
-      <td class="r ${dmaClass(r.cmp, r.dma200)}">${fmt(r.dma200)}</td>
-      <td>${slopeHtml(r.dma200_slope)}</td>
-      <td class="r" style="color:#888">${fmt(r.stop)}</td>
+      <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.dma50)}">${fmt(r.dma50)}</td>
+      <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.dma200)}">${fmt(r.dma200)}</td>
+      <td class="d-none d-md-table-cell">${slopeHtml(r.dma200_slope)}</td>
+      <td class="r d-none d-md-table-cell" style="color:#888">${fmt(r.stop)}</td>
       <td>${signalHtml(r.signal)}</td>
     </tr>`).join('');
 }
@@ -1785,15 +1785,15 @@ function renderWlRows(rows) {
     <tr>
       <td class="fw-bold">${name}<br><span style="font-size:.7rem;color:#888;font-weight:400">${r.symbol}</span></td>
       <td class="r">${fmt(r.cmp)}</td>
-      <td class="r ${dmaClass(r.cmp, r.ema20)}">${fmt(r.ema20)}</td>
-      <td class="r">${distHtml(r.ema_dist_pct)}</td>
+      <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.ema20)}">${fmt(r.ema20)}</td>
+      <td class="r d-none d-md-table-cell">${distHtml(r.ema_dist_pct)}</td>
       <td class="r">${rsiHtml(r.rsi14)}</td>
-      <td class="r ${dmaClass(r.cmp, r.dma50)}">${fmt(r.dma50)}</td>
-      <td class="r ${dmaClass(r.cmp, r.dma200)}">${fmt(r.dma200)}</td>
-      <td>${slopeHtml(r.dma200_slope)}</td>
-      <td>${crossHtml(r.cross)}</td>
+      <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.dma50)}">${fmt(r.dma50)}</td>
+      <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.dma200)}">${fmt(r.dma200)}</td>
+      <td class="d-none d-md-table-cell">${slopeHtml(r.dma200_slope)}</td>
+      <td class="d-none d-md-table-cell">${crossHtml(r.cross)}</td>
       <td>${signalHtml(r.signal)}</td>
-      <td class="r" style="color:#888">${fmt(r.stop)}</td>
+      <td class="r d-none d-md-table-cell" style="color:#888">${fmt(r.stop)}</td>
       <td><button class="wl-remove-btn" title="Remove ${r.symbol}" onclick="wlRemove('${r.symbol}')">✕</button></td>
     </tr>`;
   }).join('');
