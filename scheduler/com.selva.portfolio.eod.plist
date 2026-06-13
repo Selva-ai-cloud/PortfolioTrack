@@ -9,22 +9,11 @@
     <key>ProgramArguments</key>
     <array>
         <string>/Library/Frameworks/Python.framework/Versions/3.14/bin/python3</string>
-        <string>/Users/selva/Downloads/Portfolio_Tracker/fetch_eod.py</string>
+        <string>/Users/selva/Documents/Claude/Portfolio_Tracker/fetch_eod.py</string>
     </array>
 
-    <!-- Run at 3:35 PM every weekday (Mon=1 ... Fri=5) -->
-    <key>StartCalendarInterval</key>
-    <dict>
-        <key>Hour</key>
-        <integer>15</integer>
-        <key>Minute</key>
-        <integer>35</integer>
-        <key>Weekday</key>
-        <!-- 1–5 = Mon–Fri; launchd doesn't support ranges in one dict,
-             so we use an array of dicts below instead -->
-    </dict>
-
-    <!-- Override with an array for Mon–Fri -->
+    <!-- Run at 3:35 PM every weekday (Mon=1 ... Fri=5).
+         launchd has no weekday range, so we list one dict per day. -->
     <key>StartCalendarInterval</key>
     <array>
         <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>35</integer><key>Weekday</key><integer>1</integer></dict>
@@ -35,10 +24,10 @@
     </array>
 
     <key>StandardOutPath</key>
-    <string>/Users/selva/Downloads/Portfolio_Tracker/portfolio_log.txt</string>
+    <string>/Users/selva/Documents/Claude/Portfolio_Tracker/portfolio_log.txt</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/selva/Downloads/Portfolio_Tracker/portfolio_log.txt</string>
+    <string>/Users/selva/Documents/Claude/Portfolio_Tracker/portfolio_log.txt</string>
 
     <key>RunAtLoad</key>
     <false/>
