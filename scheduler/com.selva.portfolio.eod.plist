@@ -23,11 +23,15 @@
         <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>35</integer><key>Weekday</key><integer>5</integer></dict>
     </array>
 
+    <!-- stdout/stderr must NOT live in ~/Documents (TCC-protected — launchd
+         cannot create the file there, causing EX_CONFIG/78 before Python runs).
+         The detailed fetch log is written separately to portfolio_log.txt by
+         fetch_eod.py itself. This only captures launchd-level / pre-Python errors. -->
     <key>StandardOutPath</key>
-    <string>/Users/selva/Documents/Claude/Portfolio_Tracker/portfolio_log.txt</string>
+    <string>/Users/selva/Library/Logs/portfolio_eod.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/selva/Documents/Claude/Portfolio_Tracker/portfolio_log.txt</string>
+    <string>/Users/selva/Library/Logs/portfolio_eod.log</string>
 
     <key>RunAtLoad</key>
     <false/>
