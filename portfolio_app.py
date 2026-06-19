@@ -250,6 +250,21 @@ def compute_watchlist_dma():
     return _compute_dma_for_symbols(symbol_map)
 
 
+def _dma_result_ok(data):
+    """
+    True only if `data` is a usable result set — not an error payload and not
+    an all-empty fetch. Used to avoid caching (or serving) a transient yfinance
+    failure for the full 4-hour TTL, which would leave the Technical tab and
+    Signal Scanner blank long after Yahoo has recovered.
+    """
+    if not isinstance(data, dict) or not data:
+        return False
+    if "error" in data and len(data) == 1:        # {"error": "..."} from download failure
+        return False
+    # require at least one symbol with a real CMP
+    return any(isinstance(v, dict) and v.get("cmp") is not None for v in data.values())
+
+
 # ── DMA API route ──────────────────────────────────────────────────────────────
 @app.route("/api/dma")
 def api_dma():
@@ -260,17 +275,18 @@ def api_dma():
             with open(DMA_CACHE_FILE) as f:
                 cache = json.load(f)
             cached_at = datetime.fromisoformat(cache.get("fetched_at", "2000-01-01"))
-            if datetime.now() - cached_at < timedelta(hours=4):
+            if datetime.now() - cached_at < timedelta(hours=4) and _dma_result_ok(cache.get("data")):
                 return jsonify(cache["data"])
         except Exception:
             pass
 
     data = compute_dma_data()
-    try:
-        with open(DMA_CACHE_FILE, "w") as f:
-            json.dump({"fetched_at": datetime.now().isoformat(), "data": data}, f, indent=2)
-    except Exception:
-        pass
+    if _dma_result_ok(data):                      # never cache a failure / empty fetch
+        try:
+            with open(DMA_CACHE_FILE, "w") as f:
+                json.dump({"fetched_at": datetime.now().isoformat(), "data": data}, f, indent=2)
+        except Exception:
+            pass
     return jsonify(data)
 
 
@@ -283,16 +299,17 @@ def api_watchlist_dma():
             with open(WL_DMA_CACHE_FILE) as f:
                 cache = json.load(f)
             cached_at = datetime.fromisoformat(cache.get("fetched_at", "2000-01-01"))
-            if datetime.now() - cached_at < timedelta(hours=4):
+            if datetime.now() - cached_at < timedelta(hours=4) and _dma_result_ok(cache.get("data")):
                 return jsonify({"data": cache["data"], "symbols": load_watchlist()})
         except Exception:
             pass
     data = compute_watchlist_dma()
-    try:
-        with open(WL_DMA_CACHE_FILE, "w") as f:
-            json.dump({"fetched_at": datetime.now().isoformat(), "data": data}, f, indent=2)
-    except Exception:
-        pass
+    if _dma_result_ok(data):                      # never cache a failure / empty fetch
+        try:
+            with open(WL_DMA_CACHE_FILE, "w") as f:
+                json.dump({"fetched_at": datetime.now().isoformat(), "data": data}, f, indent=2)
+        except Exception:
+            pass
     return jsonify({"data": data, "symbols": load_watchlist()})
 
 
@@ -1558,6 +1575,17 @@ function loadDmaData(force) {
   fetch(url)
     .then(r => r.json())
     .then(data => {
+      const hasData = data && !data.error &&
+                      Object.values(data).some(v => v && v.cmp != null);
+      if (!hasData) {
+        dmaLoaded = false;   // allow a retry on next tab click / Refresh
+        tbody.innerHTML = '<tr><td colspan="10" class="dma-loading text-danger">'
+          + '⚠️ Could not fetch price data — Yahoo Finance may be rate-limiting. '
+          + 'Click ⟳ Refresh DMA to retry.'
+          + (data && data.error ? '<br><span style="font-size:.72rem;opacity:.7">' + data.error + '</span>' : '')
+          + '</td></tr>';
+        return;
+      }
       dmaLoaded = true;
       _scannerCache = data;
       dmaRows = buildDmaRows(data);
@@ -1565,6 +1593,7 @@ function loadDmaData(force) {
       renderScanner(data);
     })
     .catch(err => {
+      dmaLoaded = false;
       tbody.innerHTML = '<tr><td colspan="10" class="dma-loading text-danger">Error: ' + err + '</td></tr>';
     });
 }
