@@ -12,15 +12,15 @@
         <string>/Users/selva/Documents/Claude/Portfolio_Tracker/fetch_eod.py</string>
     </array>
 
-    <!-- Run at 3:35 PM every weekday (Mon=1 ... Fri=5).
+    <!-- Run at 7:35 PM every weekday (Mon=1 ... Fri=5).
          launchd has no weekday range, so we list one dict per day. -->
     <key>StartCalendarInterval</key>
     <array>
-        <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>35</integer><key>Weekday</key><integer>1</integer></dict>
-        <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>35</integer><key>Weekday</key><integer>2</integer></dict>
-        <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>35</integer><key>Weekday</key><integer>3</integer></dict>
-        <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>35</integer><key>Weekday</key><integer>4</integer></dict>
-        <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>35</integer><key>Weekday</key><integer>5</integer></dict>
+        <dict><key>Hour</key><integer>19</integer><key>Minute</key><integer>35</integer><key>Weekday</key><integer>1</integer></dict>
+        <dict><key>Hour</key><integer>19</integer><key>Minute</key><integer>35</integer><key>Weekday</key><integer>2</integer></dict>
+        <dict><key>Hour</key><integer>19</integer><key>Minute</key><integer>35</integer><key>Weekday</key><integer>3</integer></dict>
+        <dict><key>Hour</key><integer>19</integer><key>Minute</key><integer>35</integer><key>Weekday</key><integer>4</integer></dict>
+        <dict><key>Hour</key><integer>19</integer><key>Minute</key><integer>35</integer><key>Weekday</key><integer>5</integer></dict>
     </array>
 
     <!-- stdout/stderr must NOT live in ~/Documents (TCC-protected — launchd
