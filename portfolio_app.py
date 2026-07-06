@@ -724,6 +724,11 @@ HTML = """<!DOCTYPE html>
   .scanner-pill.buy {background:#d4edda;color:#1c5e2e}
   .scanner-pill.near{background:#fde8d0;color:#7d3c00}
   .scanner-pill.watch{background:#d6eaf8;color:#154360}
+  /* clickable filter pills */
+  .scanner-pill.clickable{cursor:pointer;user-select:none;transition:box-shadow .12s,opacity .12s}
+  .scanner-pill.clickable:hover{opacity:.85}
+  .scanner-pill.on{box-shadow:0 0 0 2px currentColor}
+  .scanner-pill.on::after{content:'✓';font-weight:700;margin-left:2px}
 
   /* ── Volume ratio colors ── */
   .vol-hot{color:#1c8c44;font-weight:700}
@@ -1939,6 +1944,29 @@ function clearSort(tableSel) {
 let _scannerCache = null;
 let scannerRows   = [];
 let scSortState   = { col: null, dir: 1 };
+let scActive      = new Set();   // pill filters; empty = show all
+
+function scGetter(col) {
+  return col === 'signal' ? (r => SIGNAL_ORDER[r.signal] ?? 9)
+       : col === 'size'   ? (r => sizeQty(r.cmp, r.stop))
+       : (r => r[col]);
+}
+
+// Compose current sort + pill filters, then render.
+function refreshScannerView() {
+  let rows = scannerRows;
+  if (scSortState.col) rows = sortRowsBy(rows, scSortState.dir, scGetter(scSortState.col));
+  if (scActive.size)   rows = rows.filter(r => scActive.has(r.signal));
+  renderScannerRows(rows,
+    scActive.size ? 'No rows match the active filter — click the pill again to clear' : null);
+}
+
+function toggleScannerFilter(sig) {
+  if (scActive.has(sig)) scActive.delete(sig); else scActive.add(sig);
+  document.querySelectorAll('#scanner-pills .scanner-pill.clickable').forEach(p =>
+    p.classList.toggle('on', scActive.has(p.dataset.sig)));
+  refreshScannerView();
+}
 
 function renderScanner(data) {
   const allBrokerStocks = allRows.filter(r => activeBroker === 'All' || r.broker === activeBroker);
@@ -1946,7 +1974,8 @@ function renderScanner(data) {
     .map(r => ({ stock: r.stock, broker: r.broker, ...( data[r.stock] || {}) }))
     .filter(r => ['Buy Setup','Near Entry','Watch'].includes(r.signal))
     .sort((a,b) => (SIGNAL_ORDER[a.signal]??9) - (SIGNAL_ORDER[b.signal]??9) || (a.ema_dist_pct??99) - (b.ema_dist_pct??99));
-  scSortState = { col: null, dir: 1 };   // fresh data → back to default order
+  scSortState = { col: null, dir: 1 };   // fresh data → default order, filters cleared
+  scActive    = new Set();
   clearSort('#scanner-table');
 
   const buy  = scannerRows.filter(r => r.signal === 'Buy Setup').length;
@@ -1954,9 +1983,9 @@ function renderScanner(data) {
   const watch= scannerRows.filter(r => r.signal === 'Watch').length;
 
   document.getElementById('scanner-pills').innerHTML = `
-    <span class="scanner-pill buy">🟢 Buy Setup <strong>${buy}</strong></span>
-    <span class="scanner-pill near">🟠 Near Entry <strong>${near}</strong></span>
-    <span class="scanner-pill watch">👀 Watch <strong>${watch}</strong></span>
+    <span class="scanner-pill buy clickable"   data-sig="Buy Setup"  title="Click to filter" onclick="toggleScannerFilter('Buy Setup')">🟢 Buy Setup <strong>${buy}</strong></span>
+    <span class="scanner-pill near clickable"  data-sig="Near Entry" title="Click to filter" onclick="toggleScannerFilter('Near Entry')">🟠 Near Entry <strong>${near}</strong></span>
+    <span class="scanner-pill watch clickable" data-sig="Watch"      title="Click to filter" onclick="toggleScannerFilter('Watch')">👀 Watch <strong>${watch}</strong></span>
     <span style="font-size:.72rem;color:#888;margin-left:auto">
       Only Buy Setup, Near Entry &amp; Watch shown · ${allBrokerStocks.length} stocks scanned
     </span>`;
@@ -1964,10 +1993,11 @@ function renderScanner(data) {
   renderScannerRows(scannerRows);
 }
 
-function renderScannerRows(rows) {
+function renderScannerRows(rows, emptyMsg) {
   const tbody = document.getElementById('scanner-tbody');
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="12" class="text-center text-muted py-3">No actionable setups right now</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" class="text-center text-muted py-3">'
+      + (emptyMsg || 'No actionable setups right now') + '</td></tr>';
     return;
   }
   tbody.innerHTML = rows.map(r => `
@@ -1991,10 +2021,7 @@ function sortScannerTable(col) {
   scSortState.dir = (scSortState.col === col) ? -scSortState.dir : 1;
   scSortState.col = col;
   markSort('#scanner-table', `sortScannerTable('${col}')`, scSortState.dir);
-  const get = col === 'signal' ? (r => SIGNAL_ORDER[r.signal] ?? 9)
-            : col === 'size'   ? (r => sizeQty(r.cmp, r.stop))
-            : (r => r[col]);
-  renderScannerRows(sortRowsBy(scannerRows, scSortState.dir, get));
+  refreshScannerView();
 }
 
 // Suggested position size risking 1% of current portfolio value on the stop.
@@ -2013,6 +2040,33 @@ function sizeHtml(cmp, stop) {
 // ── Exit Radar — holdings needing exit review ───────────────────────────────
 let exitRows    = [];
 let exSortState = { col: null, dir: 1 };
+let exActive    = new Set();   // pill filters; empty = show all
+
+// Pill categories — a row can match several, so filtering is a union (OR).
+const EX_FILTERS = {
+  stop:   x => x.belowStop,
+  trend:  x => x.d.signal === 'Avoid' || x.d.signal === 'Caution',
+  profit: x => x.takeProfit,
+};
+
+function refreshExitView() {
+  let rows = exitRows;
+  if (exSortState.col) {
+    const get = EXIT_GETTERS[exSortState.col] || (x => x.d[exSortState.col]);
+    rows = sortRowsBy(rows, exSortState.dir, get);
+  }
+  if (exActive.size)
+    rows = rows.filter(x => [...exActive].some(k => EX_FILTERS[k](x)));
+  renderExitRows(rows,
+    exActive.size ? 'No rows match the active filter — click the pill again to clear' : null);
+}
+
+function toggleExitFilter(key) {
+  if (exActive.has(key)) exActive.delete(key); else exActive.add(key);
+  document.querySelectorAll('#exit-pills .scanner-pill.clickable').forEach(p =>
+    p.classList.toggle('on', exActive.has(p.dataset.key)));
+  refreshExitView();
+}
 
 // Column accessors for sorting the nested {r, d} row objects.
 const EXIT_GETTERS = {
@@ -2054,16 +2108,17 @@ function renderExitRadar(data) {
 
   flagged.sort((a, b) => b.score - a.score || (a.r.pnl_pct ?? 0) - (b.r.pnl_pct ?? 0));
   exitRows = flagged;
-  exSortState = { col: null, dir: 1 };   // fresh data → back to severity order
+  exSortState = { col: null, dir: 1 };   // fresh data → severity order, filters cleared
+  exActive    = new Set();
   clearSort('#exit-table');
 
   const nStop   = flagged.filter(x => x.belowStop).length;
   const nTrend  = flagged.filter(x => x.d.signal === 'Avoid' || x.d.signal === 'Caution').length;
   const nProfit = flagged.filter(x => x.takeProfit).length;
   pills.innerHTML = `
-    <span class="scanner-pill" style="background:#f5c6cb;color:#721c24">🔻 Below stop <strong>${nStop}</strong></span>
-    <span class="scanner-pill" style="background:#e2e3e5;color:#383d41">📉 Weak/broken trend <strong>${nTrend}</strong></span>
-    <span class="scanner-pill" style="background:#d4edda;color:#1c5e2e">💰 Take profit <strong>${nProfit}</strong></span>
+    <span class="scanner-pill clickable" data-key="stop"   title="Click to filter" onclick="toggleExitFilter('stop')"   style="background:#f5c6cb;color:#721c24">🔻 Below stop <strong>${nStop}</strong></span>
+    <span class="scanner-pill clickable" data-key="trend"  title="Click to filter" onclick="toggleExitFilter('trend')"  style="background:#e2e3e5;color:#383d41">📉 Weak/broken trend <strong>${nTrend}</strong></span>
+    <span class="scanner-pill clickable" data-key="profit" title="Click to filter" onclick="toggleExitFilter('profit')" style="background:#d4edda;color:#1c5e2e">💰 Take profit <strong>${nProfit}</strong></span>
     <span style="font-size:.72rem;color:#888;margin-left:auto">
       ${flagged.length} of ${holdings.length} holdings flagged
     </span>`;
@@ -2071,10 +2126,11 @@ function renderExitRadar(data) {
   renderExitRows(exitRows);
 }
 
-function renderExitRows(rows) {
+function renderExitRows(rows, emptyMsg) {
   const tbody = document.getElementById('exit-tbody');
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-3">✅ Nothing needs exit review right now</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-3">'
+      + (emptyMsg || '✅ Nothing needs exit review right now') + '</td></tr>';
     return;
   }
   tbody.innerHTML = rows.map(({ r, d, reasons }) => {
@@ -2100,8 +2156,7 @@ function sortExitTable(col) {
   exSortState.dir = (exSortState.col === col) ? -exSortState.dir : 1;
   exSortState.col = col;
   markSort('#exit-table', `sortExitTable('${col}')`, exSortState.dir);
-  const get = EXIT_GETTERS[col] || (x => x.d[col]);
-  renderExitRows(sortRowsBy(exitRows, exSortState.dir, get));
+  refreshExitView();
 }
 
 function scannerFetchFailed(detail) {
