@@ -158,6 +158,10 @@ def _compute_dma_for_symbols(symbol_map):
             close_df = raw.xs("Close", axis=1, level=0)
         except (KeyError, TypeError):
             close_df = raw["Close"] if "Close" in raw.columns else raw
+        try:
+            vol_df = raw.xs("Volume", axis=1, level=0)
+        except (KeyError, TypeError):
+            vol_df = None
     except Exception as e:
         return {"error": str(e)}
 
@@ -191,6 +195,20 @@ def _compute_dma_for_symbols(symbol_map):
 
             ema_dist_pct = round((cmp - ema20) / ema20 * 100, 2) if ema20 else None
 
+            # Volume vs 20-day average — breakout confirmation. NOTE: during
+            # market hours today's bar is partial, so the ratio underestimates.
+            vol_ratio = None
+            if vol_df is not None and yahoo_sym in getattr(vol_df, "columns", []):
+                vseries = vol_df[yahoo_sym].reindex(series.index).dropna()
+                if len(vseries) >= 21:
+                    avg20 = float(vseries.iloc[-21:-1].mean())
+                    if avg20 > 0:
+                        vol_ratio = round(float(vseries.iloc[-1]) / avg20, 2)
+
+            # Distance below the 1-year high — trailing-drawdown proxy for exits
+            high_1y = float(series.max())
+            off_high_pct = round((cmp - high_1y) / high_1y * 100, 1) if high_1y else None
+
             # RSI(14) — Wilder smoothing (same series, no extra API call)
             rsi14 = None
             if len(series) >= 15:
@@ -219,6 +237,8 @@ def _compute_dma_for_symbols(symbol_map):
                 "dma200_slope": dma200_slope,
                 "ema_dist_pct": ema_dist_pct,
                 "rsi14":        rsi14,
+                "vol_ratio":    vol_ratio,
+                "off_high_pct": off_high_pct,
                 "cross":        ", ".join(crosses) if crosses else "—",
                 "signal":       _signal(cmp, ema20, dma50, dma200, dma200_slope, ema_dist_pct),
                 "stop":         dma50,
@@ -227,6 +247,7 @@ def _compute_dma_for_symbols(symbol_map):
             result[key] = {
                 "cmp": None, "ema20": None, "dma50": None, "dma200": None,
                 "dma200_slope": None, "ema_dist_pct": None, "rsi14": None,
+                "vol_ratio": None, "off_high_pct": None,
                 "cross": "—", "signal": "—", "stop": None,
             }
     return result
@@ -664,6 +685,20 @@ HTML = """<!DOCTYPE html>
   .scanner-pill.near{background:#fde8d0;color:#7d3c00}
   .scanner-pill.watch{background:#d6eaf8;color:#154360}
 
+  /* ── Volume ratio colors ── */
+  .vol-hot{color:#1c8c44;font-weight:700}
+  .vol-up {color:#1c8c44;font-weight:600}
+  .vol-neu{color:#555}
+  .vol-low{color:#999}
+
+  /* ── Exit Radar reason badges ── */
+  .ex-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.72rem;
+            font-weight:600;white-space:nowrap;margin:1px 3px 1px 0}
+  .ex-stop  {background:#c0392b;color:#fff}
+  .ex-trend {background:#7f8c8d;color:#fff}
+  .ex-weak  {background:#FFC7CE;color:#9b1c1c}
+  .ex-profit{background:#C6EFCE;color:#1c5e2e}
+
   /* ── Watchlist add bar ── */
   .wl-add-bar{display:flex;align-items:center;gap:8px;padding:8px 16px;
               background:#eef0f4;border-bottom:1px solid #dde2ea;flex-wrap:wrap}
@@ -861,6 +896,7 @@ HTML = """<!DOCTYPE html>
             <th class="r d-none d-md-table-cell">20 EMA</th>
             <th class="r d-none d-md-table-cell">EMA Dist %</th>
             <th class="r">RSI 14</th>
+            <th class="r">Vol×</th>
             <th class="r d-none d-md-table-cell">50 DMA</th>
             <th class="r d-none d-md-table-cell">200 DMA</th>
             <th class="d-none d-md-table-cell">200 Slope</th>
@@ -869,7 +905,38 @@ HTML = """<!DOCTYPE html>
           </tr>
         </thead>
         <tbody id="scanner-tbody">
-          <tr><td colspan="10" class="text-center text-muted py-3">⏳ Fetching data…</td></tr>
+          <tr><td colspan="11" class="text-center text-muted py-3">⏳ Fetching data…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Exit Radar — holdings needing exit review -->
+  <div class="card mb-3" id="exit-radar-card">
+    <div class="card-hdr-red d-flex align-items-center justify-content-between">
+      <span>🚪 Exit Radar — Holdings Needing Review</span>
+      <span style="font-size:.72rem;opacity:.8">stop = 50 DMA · profit zone = RSI&gt;70 &amp; +8% over 20EMA</span>
+    </div>
+    <div class="scanner-summary-bar" id="exit-pills">
+      <span style="font-size:.78rem;color:#555">Loading…</span>
+    </div>
+    <div class="tbl-wrap" style="max-height:320px">
+      <table class="table table-hover table-sm mb-0" id="exit-table">
+        <thead>
+          <tr>
+            <th>Stock</th>
+            <th class="r">CMP ₹</th>
+            <th class="r">P&amp;L %</th>
+            <th class="r d-none d-md-table-cell">RSI 14</th>
+            <th class="r d-none d-md-table-cell">Vol×</th>
+            <th class="r d-none d-md-table-cell">Stop ₹</th>
+            <th class="r d-none d-md-table-cell">Off 52w High</th>
+            <th class="d-none d-md-table-cell">Signal</th>
+            <th>Why review</th>
+          </tr>
+        </thead>
+        <tbody id="exit-tbody">
+          <tr><td colspan="9" class="text-center text-muted py-3">⏳ Fetching data…</td></tr>
         </tbody>
       </table>
     </div>
@@ -1015,6 +1082,7 @@ HTML = """<!DOCTYPE html>
               <th class="r sortable d-none d-md-table-cell" onclick="sortDmaTable('ema20')">20 EMA <span class="si"></span></th>
               <th class="r sortable d-none d-md-table-cell" onclick="sortDmaTable('ema_dist_pct')">EMA Dist % <span class="si"></span></th>
               <th class="r sortable" onclick="sortDmaTable('rsi14')">RSI 14 <span class="si"></span></th>
+              <th class="r sortable" onclick="sortDmaTable('vol_ratio')">Vol× <span class="si"></span></th>
               <th class="r sortable d-none d-md-table-cell" onclick="sortDmaTable('dma50')">50 DMA <span class="si"></span></th>
               <th class="r sortable d-none d-md-table-cell" onclick="sortDmaTable('dma200')">200 DMA <span class="si"></span></th>
               <th class="sortable d-none d-md-table-cell" onclick="sortDmaTable('dma200_slope')">200 Slope <span class="si"></span></th>
@@ -1051,6 +1119,7 @@ HTML = """<!DOCTYPE html>
               <th class="r sortable d-none d-md-table-cell" onclick="sortWlTable('ema20')">20 EMA <span class="si"></span></th>
               <th class="r sortable d-none d-md-table-cell" onclick="sortWlTable('ema_dist_pct')">EMA Dist % <span class="si"></span></th>
               <th class="r sortable" onclick="sortWlTable('rsi14')">RSI 14 <span class="si"></span></th>
+              <th class="r sortable" onclick="sortWlTable('vol_ratio')">Vol× <span class="si"></span></th>
               <th class="r sortable d-none d-md-table-cell" onclick="sortWlTable('dma50')">50 DMA <span class="si"></span></th>
               <th class="r sortable d-none d-md-table-cell" onclick="sortWlTable('dma200')">200 DMA <span class="si"></span></th>
               <th class="sortable d-none d-md-table-cell" onclick="sortWlTable('dma200_slope')">200 Slope <span class="si"></span></th>
@@ -1062,9 +1131,9 @@ HTML = """<!DOCTYPE html>
           </thead>
           <tbody id="wl-tbody">
             {% if watchlist %}
-            <tr><td colspan="11" class="text-center text-muted py-3">⏳ Click tab to load signal data…</td></tr>
+            <tr><td colspan="13" class="text-center text-muted py-3">⏳ Click tab to load signal data…</td></tr>
             {% else %}
-            <tr><td colspan="11" class="text-center text-muted py-3">No watchlist stocks yet — add a Yahoo symbol above.</td></tr>
+            <tr><td colspan="13" class="text-center text-muted py-3">No watchlist stocks yet — add a Yahoo symbol above.</td></tr>
             {% endif %}
           </tbody>
         </table>
@@ -1519,8 +1588,11 @@ function applyFilter(broker) {
   // 8. Re-apply sort if active
   if (sortState.col) sortTable(sortState.col);
 
-  // 9. Rebuild DMA table + scanner for new broker scope
-  if (_scannerCache) renderScanner(_scannerCache);
+  // 9. Rebuild DMA table + scanner + exit radar for new broker scope
+  if (_scannerCache) {
+    renderScanner(_scannerCache);
+    renderExitRadar(_scannerCache);
+  }
   if (dmaLoaded) {
     dmaRows = buildDmaRows(_scannerCache || {});
     renderDmaTable(dmaRows);
@@ -1579,14 +1651,14 @@ function dmaHasData(data) {
 
 function loadDmaData(force) {
   const tbody = document.getElementById('dma-tbody');
-  tbody.innerHTML = '<tr><td colspan="10" class="dma-loading">⏳ Fetching 1yr price history &amp; computing signals…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="12" class="dma-loading">⏳ Fetching 1yr price history &amp; computing signals…</td></tr>';
   const url = '/api/dma' + (force ? '?force=1' : '');
   fetch(url)
     .then(r => r.json())
     .then(data => {
       if (!dmaHasData(data)) {
         dmaLoaded = false;   // allow a retry on next tab click / Refresh
-        tbody.innerHTML = '<tr><td colspan="10" class="dma-loading text-danger">'
+        tbody.innerHTML = '<tr><td colspan="12" class="dma-loading text-danger">'
           + '⚠️ Could not fetch price data — Yahoo Finance may be rate-limiting. '
           + 'Click ⟳ Refresh DMA to retry.'
           + (data && data.error ? '<br><span style="font-size:.72rem;opacity:.7">' + data.error + '</span>' : '')
@@ -1598,10 +1670,11 @@ function loadDmaData(force) {
       dmaRows = buildDmaRows(data);
       renderDmaTable(dmaRows);
       renderScanner(data);
+      renderExitRadar(data);
     })
     .catch(err => {
       dmaLoaded = false;
-      tbody.innerHTML = '<tr><td colspan="10" class="dma-loading text-danger">Error: ' + err + '</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="12" class="dma-loading text-danger">Error: ' + err + '</td></tr>';
     });
 }
 
@@ -1620,6 +1693,8 @@ function buildDmaRows(data) {
         dma200_slope:  d.dma200_slope  ?? null,
         ema_dist_pct:  d.ema_dist_pct  ?? null,
         rsi14:         d.rsi14         ?? null,
+        vol_ratio:     d.vol_ratio     ?? null,
+        off_high_pct:  d.off_high_pct  ?? null,
         cross:         d.cross         ?? '—',
         signal:        d.signal        ?? '—',
         stop:          d.stop          ?? null,
@@ -1637,6 +1712,18 @@ function slopeHtml(s) {
   if (s === 'down') return '<span class="slope-dn">↓ Down</span>';
   if (s === 'flat') return '<span class="slope-flat">→ Flat</span>';
   return '<span style="color:#aaa">—</span>';
+}
+
+function volHtml(v) {
+  if (v == null) return '<span style="color:#aaa">—</span>';
+  const cls = v >= 1.5 ? 'vol-hot' : (v >= 1.2 ? 'vol-up' : (v <= 0.6 ? 'vol-low' : 'vol-neu'));
+  return `<span class="${cls}">${v.toFixed(2)}×</span>`;
+}
+
+function offHighHtml(p) {
+  if (p == null) return '<span style="color:#aaa">—</span>';
+  const cls = p <= -20 ? 'neg' : (p <= -10 ? 'neu' : '');
+  return `<span class="${cls}">${p.toFixed(1)}%</span>`;
 }
 
 function signalHtml(s) {
@@ -1683,7 +1770,7 @@ function fmt(v) {
 function renderDmaTable(rows) {
   const tbody = document.getElementById('dma-tbody');
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="10" class="dma-loading">No data</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" class="dma-loading">No data</td></tr>';
     return;
   }
   tbody.innerHTML = rows.map(r => `
@@ -1693,6 +1780,7 @@ function renderDmaTable(rows) {
       <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.ema20)}">${fmt(r.ema20)}</td>
       <td class="r d-none d-md-table-cell">${distHtml(r.ema_dist_pct)}</td>
       <td class="r">${rsiHtml(r.rsi14)}</td>
+      <td class="r">${volHtml(r.vol_ratio)}</td>
       <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.dma50)}">${fmt(r.dma50)}</td>
       <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.dma200)}">${fmt(r.dma200)}</td>
       <td class="d-none d-md-table-cell">${slopeHtml(r.dma200_slope)}</td>
@@ -1746,7 +1834,7 @@ function renderScanner(data) {
 
   const tbody = document.getElementById('scanner-tbody');
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-3">No actionable setups right now</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted py-3">No actionable setups right now</td></tr>';
     return;
   }
   tbody.innerHTML = rows.map(r => `
@@ -1756,6 +1844,7 @@ function renderScanner(data) {
       <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.ema20)}">${fmt(r.ema20)}</td>
       <td class="r d-none d-md-table-cell">${distHtml(r.ema_dist_pct)}</td>
       <td class="r">${rsiHtml(r.rsi14)}</td>
+      <td class="r">${volHtml(r.vol_ratio)}</td>
       <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.dma50)}">${fmt(r.dma50)}</td>
       <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.dma200)}">${fmt(r.dma200)}</td>
       <td class="d-none d-md-table-cell">${slopeHtml(r.dma200_slope)}</td>
@@ -1764,14 +1853,74 @@ function renderScanner(data) {
     </tr>`).join('');
 }
 
+// ── Exit Radar — holdings needing exit review ───────────────────────────────
+function renderExitRadar(data) {
+  const pills = document.getElementById('exit-pills');
+  const tbody = document.getElementById('exit-tbody');
+  if (!pills || !tbody) return;
+
+  const holdings = allRows.filter(r => activeBroker === 'All' || r.broker === activeBroker);
+  const flagged = holdings.map(r => {
+    const d = data[r.stock] || {};
+    const belowStop = d.cmp != null && d.stop != null && d.cmp < d.stop;
+    const takeProfit = d.rsi14 != null && d.rsi14 > 70 &&
+                       d.ema_dist_pct != null && d.ema_dist_pct > 8;
+    const reasons = [];
+    let score = 0;
+    if (belowStop)              { reasons.push('<span class="ex-badge ex-stop">Below stop</span>');    score += 2; }
+    if (d.signal === 'Avoid')   { reasons.push('<span class="ex-badge ex-trend">Trend broken</span>'); score += 2; }
+    else if (d.signal === 'Caution') { reasons.push('<span class="ex-badge ex-weak">Weak trend</span>'); score += 1; }
+    if (takeProfit)             { reasons.push('<span class="ex-badge ex-profit">Take profit</span>'); score += 1; }
+    return { r, d, reasons, score, belowStop, takeProfit };
+  }).filter(x => x.reasons.length);
+
+  flagged.sort((a, b) => b.score - a.score || (a.r.pnl_pct ?? 0) - (b.r.pnl_pct ?? 0));
+
+  const nStop   = flagged.filter(x => x.belowStop).length;
+  const nTrend  = flagged.filter(x => x.d.signal === 'Avoid' || x.d.signal === 'Caution').length;
+  const nProfit = flagged.filter(x => x.takeProfit).length;
+  pills.innerHTML = `
+    <span class="scanner-pill" style="background:#f5c6cb;color:#721c24">🔻 Below stop <strong>${nStop}</strong></span>
+    <span class="scanner-pill" style="background:#e2e3e5;color:#383d41">📉 Weak/broken trend <strong>${nTrend}</strong></span>
+    <span class="scanner-pill" style="background:#d4edda;color:#1c5e2e">💰 Take profit <strong>${nProfit}</strong></span>
+    <span style="font-size:.72rem;color:#888;margin-left:auto">
+      ${flagged.length} of ${holdings.length} holdings flagged
+    </span>`;
+
+  if (!flagged.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">✅ Nothing needs exit review right now</td></tr>';
+    return;
+  }
+  tbody.innerHTML = flagged.map(({ r, d, reasons }) => {
+    const pnlCls = r.pnl_pct != null ? (r.pnl_pct > 0 ? 'pos' : (r.pnl_pct < 0 ? 'neg' : '')) : '';
+    const pnlTxt = r.pnl_pct != null ? (r.pnl_pct >= 0 ? '+' : '') + r.pnl_pct.toFixed(2) + '%' : '—';
+    return `
+    <tr>
+      <td class="fw-bold">${r.stock}</td>
+      <td class="r">${fmt(d.cmp)}</td>
+      <td class="r ${pnlCls}">${pnlTxt}</td>
+      <td class="r d-none d-md-table-cell">${rsiHtml(d.rsi14)}</td>
+      <td class="r d-none d-md-table-cell">${volHtml(d.vol_ratio)}</td>
+      <td class="r d-none d-md-table-cell" style="color:#888">${fmt(d.stop)}</td>
+      <td class="r d-none d-md-table-cell">${offHighHtml(d.off_high_pct)}</td>
+      <td class="d-none d-md-table-cell">${signalHtml(d.signal)}</td>
+      <td>${reasons.join('')}</td>
+    </tr>`;
+  }).join('');
+}
+
 function scannerFetchFailed(detail) {
   document.getElementById('scanner-pills').innerHTML =
     '<span style="font-size:.78rem;color:#c0392b">⚠️ Could not fetch signal data — '
     + 'Yahoo Finance may be rate-limiting.</span>'
     + '<button class="dma-refresh-btn" style="margin-left:auto" onclick="loadScanner()">⟳ Retry</button>';
   document.getElementById('scanner-tbody').innerHTML =
-    '<tr><td colspan="10" class="text-center text-muted py-3">'
+    '<tr><td colspan="11" class="text-center text-muted py-3">'
     + (detail ? 'Error: ' + detail : 'No data — click Retry above') + '</td></tr>';
+  document.getElementById('exit-pills').innerHTML =
+    '<span style="font-size:.78rem;color:#c0392b">⚠️ No data — retry from the scanner above.</span>';
+  document.getElementById('exit-tbody').innerHTML =
+    '<tr><td colspan="9" class="text-center text-muted py-3">No data</td></tr>';
 }
 
 function loadScanner() {
@@ -1784,6 +1933,7 @@ function loadScanner() {
       }
       _scannerCache = data;
       renderScanner(data);
+      renderExitRadar(data);
       // Update timestamp
       const ts = document.getElementById('scanner-ts');
       if (ts) ts.textContent = 'Data via yfinance';
@@ -1799,7 +1949,7 @@ let wlSortState = { col: null, dir: 1 };
 
 function loadWatchlistDma(force) {
   const tbody = document.getElementById('wl-tbody');
-  tbody.innerHTML = '<tr><td colspan="12" class="dma-loading">⏳ Fetching 1yr data for watchlist…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="13" class="dma-loading">⏳ Fetching 1yr data for watchlist…</td></tr>';
   const url = '/api/watchlist-dma' + (force ? '?force=1' : '');
   fetch(url)
     .then(r => r.json())
@@ -1809,7 +1959,7 @@ function loadWatchlistDma(force) {
       // when symbols exist but the fetch produced no usable data.
       if (syms.length && !dmaHasData(resp.data)) {
         wlLoaded = false;   // allow a retry on next tab click / Refresh
-        tbody.innerHTML = '<tr><td colspan="12" class="dma-loading text-danger">'
+        tbody.innerHTML = '<tr><td colspan="13" class="dma-loading text-danger">'
           + '⚠️ Could not fetch watchlist data — Yahoo Finance may be rate-limiting. '
           + 'Click ⟳ Refresh to retry.</td></tr>';
         return;
@@ -1821,7 +1971,7 @@ function loadWatchlistDma(force) {
     })
     .catch(err => {
       wlLoaded = false;
-      tbody.innerHTML = `<tr><td colspan="12" class="dma-loading text-danger">Error: ${err}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="13" class="dma-loading text-danger">Error: ${err}</td></tr>`;
     });
 }
 
@@ -1834,6 +1984,7 @@ function buildWlRows(data, symbols) {
       ema20:        d.ema20        ?? null,
       ema_dist_pct: d.ema_dist_pct ?? null,
       rsi14:        d.rsi14        ?? null,
+      vol_ratio:    d.vol_ratio    ?? null,
       dma50:        d.dma50        ?? null,
       dma200:       d.dma200       ?? null,
       dma200_slope: d.dma200_slope ?? null,
@@ -1847,7 +1998,7 @@ function buildWlRows(data, symbols) {
 function renderWlRows(rows) {
   const tbody = document.getElementById('wl-tbody');
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="12" class="text-center text-muted py-3">No watchlist stocks — add a Yahoo symbol above.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="13" class="text-center text-muted py-3">No watchlist stocks — add a Yahoo symbol above.</td></tr>';
     return;
   }
   tbody.innerHTML = rows.map(r => {
@@ -1859,6 +2010,7 @@ function renderWlRows(rows) {
       <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.ema20)}">${fmt(r.ema20)}</td>
       <td class="r d-none d-md-table-cell">${distHtml(r.ema_dist_pct)}</td>
       <td class="r">${rsiHtml(r.rsi14)}</td>
+      <td class="r">${volHtml(r.vol_ratio)}</td>
       <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.dma50)}">${fmt(r.dma50)}</td>
       <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.dma200)}">${fmt(r.dma200)}</td>
       <td class="d-none d-md-table-cell">${slopeHtml(r.dma200_slope)}</td>
