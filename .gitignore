@@ -21,6 +21,8 @@ setup_scheduler.sh
 launch_verify.txt
 # Flask server output (written by start_dashboard.command)
 flask.log
+# last-scan signal snapshot (written by signal_scan.py)
+signal_state.json
 
 # ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/

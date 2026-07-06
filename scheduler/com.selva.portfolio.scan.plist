@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.selva.portfolio.scan</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Library/Frameworks/Python.framework/Versions/3.14/bin/python3</string>
+        <string>/Users/selva/Documents/Claude/Portfolio_Tracker/signal_scan.py</string>
+    </array>
+
+    <!-- Pre-close scan: 6:30 PM Adelaide (≈2:30 PM IST in Adelaide winter),
+         every weekday. NSE closes 3:30 PM IST, so signals arrive with time
+         to act the same day. -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict><key>Hour</key><integer>18</integer><key>Minute</key><integer>30</integer><key>Weekday</key><integer>1</integer></dict>
+        <dict><key>Hour</key><integer>18</integer><key>Minute</key><integer>30</integer><key>Weekday</key><integer>2</integer></dict>
+        <dict><key>Hour</key><integer>18</integer><key>Minute</key><integer>30</integer><key>Weekday</key><integer>3</integer></dict>
+        <dict><key>Hour</key><integer>18</integer><key>Minute</key><integer>30</integer><key>Weekday</key><integer>4</integer></dict>
+        <dict><key>Hour</key><integer>18</integer><key>Minute</key><integer>30</integer><key>Weekday</key><integer>5</integer></dict>
+    </array>
+
+    <!-- Logs must NOT live in ~/Documents (TCC-protected — launchd cannot
+         create files there and the job dies with EX_CONFIG/78). -->
+    <key>StandardOutPath</key>
+    <string>/Users/selva/Library/Logs/portfolio_scan.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/selva/Library/Logs/portfolio_scan.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>
