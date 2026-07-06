@@ -1568,6 +1568,15 @@ function switchHoldingsTab(tab) {
 // ── DMA / Signal helpers ───────────────────────────────────────────────────
 const SIGNAL_ORDER = {'Buy Setup':0,'Near Entry':1,'Watch':2,'Caution':3,'Avoid':4,'—':5};
 
+// Client-side twin of the server's _dma_result_ok(): a usable result set has
+// no error key and at least one symbol with a real CMP. Shared by the
+// Technical tab, Signal Scanner and Watchlist so a transient yfinance failure
+// is surfaced (with a retry) everywhere instead of silently blanking a view.
+function dmaHasData(data) {
+  return !!data && !data.error &&
+         Object.values(data).some(v => v && v.cmp != null);
+}
+
 function loadDmaData(force) {
   const tbody = document.getElementById('dma-tbody');
   tbody.innerHTML = '<tr><td colspan="10" class="dma-loading">⏳ Fetching 1yr price history &amp; computing signals…</td></tr>';
@@ -1575,9 +1584,7 @@ function loadDmaData(force) {
   fetch(url)
     .then(r => r.json())
     .then(data => {
-      const hasData = data && !data.error &&
-                      Object.values(data).some(v => v && v.cmp != null);
-      if (!hasData) {
+      if (!dmaHasData(data)) {
         dmaLoaded = false;   // allow a retry on next tab click / Refresh
         tbody.innerHTML = '<tr><td colspan="10" class="dma-loading text-danger">'
           + '⚠️ Could not fetch price data — Yahoo Finance may be rate-limiting. '
@@ -1757,20 +1764,31 @@ function renderScanner(data) {
     </tr>`).join('');
 }
 
+function scannerFetchFailed(detail) {
+  document.getElementById('scanner-pills').innerHTML =
+    '<span style="font-size:.78rem;color:#c0392b">⚠️ Could not fetch signal data — '
+    + 'Yahoo Finance may be rate-limiting.</span>'
+    + '<button class="dma-refresh-btn" style="margin-left:auto" onclick="loadScanner()">⟳ Retry</button>';
+  document.getElementById('scanner-tbody').innerHTML =
+    '<tr><td colspan="10" class="text-center text-muted py-3">'
+    + (detail ? 'Error: ' + detail : 'No data — click Retry above') + '</td></tr>';
+}
+
 function loadScanner() {
   fetch('/api/dma')
     .then(r => r.json())
     .then(data => {
+      if (!dmaHasData(data)) {           // don't poison _scannerCache with an error payload
+        scannerFetchFailed(data && data.error);
+        return;
+      }
       _scannerCache = data;
       renderScanner(data);
       // Update timestamp
       const ts = document.getElementById('scanner-ts');
       if (ts) ts.textContent = 'Data via yfinance';
     })
-    .catch(() => {
-      document.getElementById('scanner-tbody').innerHTML =
-        '<tr><td colspan="9" class="text-center text-muted py-3">Could not load signal data</td></tr>';
-    });
+    .catch(err => scannerFetchFailed(err));
 }
 
 // ── Watchlist ──────────────────────────────────────────────────────────────
@@ -1786,12 +1804,23 @@ function loadWatchlistDma(force) {
   fetch(url)
     .then(r => r.json())
     .then(resp => {
+      const syms = resp.symbols || [];
+      // An empty watchlist is a valid (empty) result — only flag a failure
+      // when symbols exist but the fetch produced no usable data.
+      if (syms.length && !dmaHasData(resp.data)) {
+        wlLoaded = false;   // allow a retry on next tab click / Refresh
+        tbody.innerHTML = '<tr><td colspan="12" class="dma-loading text-danger">'
+          + '⚠️ Could not fetch watchlist data — Yahoo Finance may be rate-limiting. '
+          + 'Click ⟳ Refresh to retry.</td></tr>';
+        return;
+      }
       wlLoaded  = true;
-      wlSymbols = resp.symbols || [];
+      wlSymbols = syms;
       wlRows    = buildWlRows(resp.data || {}, wlSymbols);
       renderWlRows(wlRows);
     })
     .catch(err => {
+      wlLoaded = false;
       tbody.innerHTML = `<tr><td colspan="12" class="dma-loading text-danger">Error: ${err}</td></tr>`;
     });
 }

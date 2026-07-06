@@ -6,7 +6,9 @@ cd "$HOME/Documents/claude/portfolio_tracker" || { echo "FOLDER NOT FOUND"; exit
 if curl -s -o /dev/null http://localhost:5050/ ; then
   echo "Already running on http://localhost:5050"
 else
-  nohup python3 portfolio_app.py > portfolio_log.txt 2>&1 &
+  # Flask output goes to its own log — portfolio_log.txt belongs to
+  # fetch_eod.py (appended EOD history; '>' here used to wipe it).
+  nohup python3 portfolio_app.py > flask.log 2>&1 &
   echo "Launched portfolio_app.py (pid $!)"
 fi
 

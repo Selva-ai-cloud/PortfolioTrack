@@ -19,6 +19,8 @@ goodwill.csv
 setup_scheduler.sh
 # launcher-generated verification artifact
 launch_verify.txt
+# Flask server output (written by start_dashboard.command)
+flask.log
 
 # ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
