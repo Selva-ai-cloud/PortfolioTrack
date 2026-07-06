@@ -931,19 +931,19 @@ HTML = """<!DOCTYPE html>
       <table class="table table-hover table-sm mb-0" id="scanner-table">
         <thead>
           <tr>
-            <th>Stock</th>
-            <th class="r">CMP ₹</th>
-            <th class="r d-none d-md-table-cell">20 EMA</th>
-            <th class="r d-none d-md-table-cell">EMA Dist %</th>
-            <th class="r">RSI 14</th>
-            <th class="r">Vol×</th>
-            <th class="r d-none d-md-table-cell">50 DMA</th>
-            <th class="r d-none d-md-table-cell">200 DMA</th>
-            <th class="d-none d-md-table-cell">200 Slope</th>
-            <th class="r d-none d-md-table-cell">Stop ₹</th>
-            <th class="r d-none d-md-table-cell"
-                title="Suggested qty risking 1% of portfolio value: (1% × portfolio) ÷ (CMP − stop)">Size @1%</th>
-            <th>Signal</th>
+            <th class="sortable" onclick="sortScannerTable('stock')">Stock <span class="si"></span></th>
+            <th class="r sortable" onclick="sortScannerTable('cmp')">CMP ₹ <span class="si"></span></th>
+            <th class="r sortable d-none d-md-table-cell" onclick="sortScannerTable('ema20')">20 EMA <span class="si"></span></th>
+            <th class="r sortable d-none d-md-table-cell" onclick="sortScannerTable('ema_dist_pct')">EMA Dist % <span class="si"></span></th>
+            <th class="r sortable" onclick="sortScannerTable('rsi14')">RSI 14 <span class="si"></span></th>
+            <th class="r sortable" onclick="sortScannerTable('vol_ratio')">Vol× <span class="si"></span></th>
+            <th class="r sortable d-none d-md-table-cell" onclick="sortScannerTable('dma50')">50 DMA <span class="si"></span></th>
+            <th class="r sortable d-none d-md-table-cell" onclick="sortScannerTable('dma200')">200 DMA <span class="si"></span></th>
+            <th class="sortable d-none d-md-table-cell" onclick="sortScannerTable('dma200_slope')">200 Slope <span class="si"></span></th>
+            <th class="r sortable d-none d-md-table-cell" onclick="sortScannerTable('stop')">Stop ₹ <span class="si"></span></th>
+            <th class="r sortable d-none d-md-table-cell" onclick="sortScannerTable('size')"
+                title="Suggested qty risking 1% of portfolio value: (1% × portfolio) ÷ (CMP − stop)">Size @1% <span class="si"></span></th>
+            <th class="sortable" onclick="sortScannerTable('signal')">Signal <span class="si"></span></th>
           </tr>
         </thead>
         <tbody id="scanner-tbody">
@@ -966,17 +966,17 @@ HTML = """<!DOCTYPE html>
       <table class="table table-hover table-sm mb-0" id="exit-table">
         <thead>
           <tr>
-            <th>Stock</th>
-            <th class="r">CMP ₹</th>
-            <th class="r">P&amp;L %</th>
-            <th class="r d-none d-md-table-cell">RSI 14</th>
-            <th class="r d-none d-md-table-cell">Vol×</th>
-            <th class="r d-none d-md-table-cell">Stop ₹</th>
-            <th class="r d-none d-md-table-cell">Off 52w High</th>
-            <th class="r d-none d-md-table-cell"
-                title="Indian equity tax: gains turn long-term (12.5%) after 1 year; short-term is 20%">LTCG</th>
-            <th class="d-none d-md-table-cell">Signal</th>
-            <th>Why review</th>
+            <th class="sortable" onclick="sortExitTable('stock')">Stock <span class="si"></span></th>
+            <th class="r sortable" onclick="sortExitTable('cmp')">CMP ₹ <span class="si"></span></th>
+            <th class="r sortable" onclick="sortExitTable('pnl_pct')">P&amp;L % <span class="si"></span></th>
+            <th class="r sortable d-none d-md-table-cell" onclick="sortExitTable('rsi14')">RSI 14 <span class="si"></span></th>
+            <th class="r sortable d-none d-md-table-cell" onclick="sortExitTable('vol_ratio')">Vol× <span class="si"></span></th>
+            <th class="r sortable d-none d-md-table-cell" onclick="sortExitTable('stop')">Stop ₹ <span class="si"></span></th>
+            <th class="r sortable d-none d-md-table-cell" onclick="sortExitTable('off_high_pct')">Off 52w High <span class="si"></span></th>
+            <th class="r sortable d-none d-md-table-cell" onclick="sortExitTable('ltcg')"
+                title="Indian equity tax: gains turn long-term (12.5%) after 1 year; short-term is 20%">LTCG <span class="si"></span></th>
+            <th class="sortable d-none d-md-table-cell" onclick="sortExitTable('signal')">Signal <span class="si"></span></th>
+            <th class="sortable" onclick="sortExitTable('score')">Why review <span class="si"></span></th>
           </tr>
         </thead>
         <tbody id="exit-tbody">
@@ -1908,19 +1908,50 @@ function sortDmaTable(col) {
   renderDmaTable(sorted);
 }
 
+// ── Shared table-sort helpers (Scanner + Exit Radar) ────────────────────────
+// Sorts with nulls always last, strings via localeCompare, numbers numerically.
+function sortRowsBy(rows, dir, getVal) {
+  return [...rows].sort((a, b) => {
+    const va = getVal(a), vb = getVal(b);
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    if (typeof va === 'string') return dir * va.localeCompare(vb);
+    return dir * (va - vb);
+  });
+}
+
+// Toggle the ▲/▼ indicator on the clicked header, clear the others.
+function markSort(tableSel, onclickStr, dir) {
+  document.querySelectorAll(tableSel + ' th.sortable').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (th.getAttribute('onclick') === onclickStr)
+      th.classList.add(dir === 1 ? 'sort-asc' : 'sort-desc');
+  });
+}
+
+function clearSort(tableSel) {
+  document.querySelectorAll(tableSel + ' th.sortable')
+    .forEach(th => th.classList.remove('sort-asc', 'sort-desc'));
+}
+
 // ── Signal Scanner ─────────────────────────────────────────────────────────
 let _scannerCache = null;
+let scannerRows   = [];
+let scSortState   = { col: null, dir: 1 };
 
 function renderScanner(data) {
   const allBrokerStocks = allRows.filter(r => activeBroker === 'All' || r.broker === activeBroker);
-  const rows = allBrokerStocks
+  scannerRows = allBrokerStocks
     .map(r => ({ stock: r.stock, broker: r.broker, ...( data[r.stock] || {}) }))
     .filter(r => ['Buy Setup','Near Entry','Watch'].includes(r.signal))
     .sort((a,b) => (SIGNAL_ORDER[a.signal]??9) - (SIGNAL_ORDER[b.signal]??9) || (a.ema_dist_pct??99) - (b.ema_dist_pct??99));
+  scSortState = { col: null, dir: 1 };   // fresh data → back to default order
+  clearSort('#scanner-table');
 
-  const buy  = rows.filter(r => r.signal === 'Buy Setup').length;
-  const near = rows.filter(r => r.signal === 'Near Entry').length;
-  const watch= rows.filter(r => r.signal === 'Watch').length;
+  const buy  = scannerRows.filter(r => r.signal === 'Buy Setup').length;
+  const near = scannerRows.filter(r => r.signal === 'Near Entry').length;
+  const watch= scannerRows.filter(r => r.signal === 'Watch').length;
 
   document.getElementById('scanner-pills').innerHTML = `
     <span class="scanner-pill buy">🟢 Buy Setup <strong>${buy}</strong></span>
@@ -1930,6 +1961,10 @@ function renderScanner(data) {
       Only Buy Setup, Near Entry &amp; Watch shown · ${allBrokerStocks.length} stocks scanned
     </span>`;
 
+  renderScannerRows(scannerRows);
+}
+
+function renderScannerRows(rows) {
   const tbody = document.getElementById('scanner-tbody');
   if (!rows.length) {
     tbody.innerHTML = '<tr><td colspan="12" class="text-center text-muted py-3">No actionable setups right now</td></tr>';
@@ -1952,17 +1987,51 @@ function renderScanner(data) {
     </tr>`).join('');
 }
 
+function sortScannerTable(col) {
+  scSortState.dir = (scSortState.col === col) ? -scSortState.dir : 1;
+  scSortState.col = col;
+  markSort('#scanner-table', `sortScannerTable('${col}')`, scSortState.dir);
+  const get = col === 'signal' ? (r => SIGNAL_ORDER[r.signal] ?? 9)
+            : col === 'size'   ? (r => sizeQty(r.cmp, r.stop))
+            : (r => r[col]);
+  renderScannerRows(sortRowsBy(scannerRows, scSortState.dir, get));
+}
+
 // Suggested position size risking 1% of current portfolio value on the stop.
+function sizeQty(cmp, stop) {
+  if (cmp == null || stop == null || cmp <= stop) return null;
+  const qty = Math.floor(calcStats(allRows).curr * 0.01 / (cmp - stop));
+  return qty || null;
+}
+
 function sizeHtml(cmp, stop) {
-  if (cmp == null || stop == null || cmp <= stop)
-    return '<span style="color:#aaa">—</span>';
-  const riskBudget = calcStats(allRows).curr * 0.01;
-  const qty = Math.floor(riskBudget / (cmp - stop));
-  if (!qty) return '<span style="color:#aaa">—</span>';
+  const qty = sizeQty(cmp, stop);
+  if (qty == null) return '<span style="color:#aaa">—</span>';
   return `<span title="risk ₹${(cmp - stop).toFixed(2)}/share, ~₹${Math.round(qty * cmp).toLocaleString('en-IN')} outlay">${qty}</span>`;
 }
 
 // ── Exit Radar — holdings needing exit review ───────────────────────────────
+let exitRows    = [];
+let exSortState = { col: null, dir: 1 };
+
+// Column accessors for sorting the nested {r, d} row objects.
+const EXIT_GETTERS = {
+  stock:        x => x.r.stock,
+  cmp:          x => x.d.cmp,
+  pnl_pct:      x => x.r.pnl_pct,
+  rsi14:        x => x.d.rsi14,
+  vol_ratio:    x => x.d.vol_ratio,
+  stop:         x => x.d.stop,
+  off_high_pct: x => x.d.off_high_pct,
+  ltcg:         x => {
+    if (!x.r.buy_date) return null;
+    const held = Math.floor((Date.now() - new Date(x.r.buy_date).getTime()) / 86400000);
+    return isNaN(held) ? null : held;
+  },
+  signal:       x => SIGNAL_ORDER[x.d.signal] ?? 9,
+  score:        x => x.score,
+};
+
 function renderExitRadar(data) {
   const pills = document.getElementById('exit-pills');
   const tbody = document.getElementById('exit-tbody');
@@ -1984,6 +2053,9 @@ function renderExitRadar(data) {
   }).filter(x => x.reasons.length);
 
   flagged.sort((a, b) => b.score - a.score || (a.r.pnl_pct ?? 0) - (b.r.pnl_pct ?? 0));
+  exitRows = flagged;
+  exSortState = { col: null, dir: 1 };   // fresh data → back to severity order
+  clearSort('#exit-table');
 
   const nStop   = flagged.filter(x => x.belowStop).length;
   const nTrend  = flagged.filter(x => x.d.signal === 'Avoid' || x.d.signal === 'Caution').length;
@@ -1996,11 +2068,16 @@ function renderExitRadar(data) {
       ${flagged.length} of ${holdings.length} holdings flagged
     </span>`;
 
-  if (!flagged.length) {
+  renderExitRows(exitRows);
+}
+
+function renderExitRows(rows) {
+  const tbody = document.getElementById('exit-tbody');
+  if (!rows.length) {
     tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-3">✅ Nothing needs exit review right now</td></tr>';
     return;
   }
-  tbody.innerHTML = flagged.map(({ r, d, reasons }) => {
+  tbody.innerHTML = rows.map(({ r, d, reasons }) => {
     const pnlCls = r.pnl_pct != null ? (r.pnl_pct > 0 ? 'pos' : (r.pnl_pct < 0 ? 'neg' : '')) : '';
     const pnlTxt = r.pnl_pct != null ? (r.pnl_pct >= 0 ? '+' : '') + r.pnl_pct.toFixed(2) + '%' : '—';
     return `
@@ -2017,6 +2094,14 @@ function renderExitRadar(data) {
       <td>${reasons.join('')}</td>
     </tr>`;
   }).join('');
+}
+
+function sortExitTable(col) {
+  exSortState.dir = (exSortState.col === col) ? -exSortState.dir : 1;
+  exSortState.col = col;
+  markSort('#exit-table', `sortExitTable('${col}')`, exSortState.dir);
+  const get = EXIT_GETTERS[col] || (x => x.d[col]);
+  renderExitRows(sortRowsBy(exitRows, exSortState.dir, get));
 }
 
 function scannerFetchFailed(detail) {
