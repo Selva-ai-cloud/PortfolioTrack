@@ -28,7 +28,8 @@ sys.path.insert(0, BASE_DIR)
 
 import portfolio_app as app  # reuse compute_dma_data / _dma_result_ok / cache paths
 
-STATE_FILE = os.path.join(BASE_DIR, "signal_state.json")
+STATE_FILE   = os.path.join(BASE_DIR, "signal_state.json")
+JOURNAL_FILE = os.path.join(BASE_DIR, "signal_journal.json")
 
 UPGRADES   = {"Buy Setup", "Near Entry"}
 DOWNGRADES = {"Caution", "Avoid"}
@@ -71,6 +72,23 @@ def save_cache(path, data):
         json.dump({"fetched_at": datetime.now().isoformat(), "data": data}, f, indent=2)
 
 
+def append_journal(entries):
+    """Append signal transitions to the journal — the raw material for
+    evaluating the strategy's hit-rate later (e.g. how often Buy Setup wins)."""
+    if not entries:
+        return
+    journal = []
+    if os.path.exists(JOURNAL_FILE):
+        try:
+            with open(JOURNAL_FILE) as f:
+                journal = json.load(f)
+        except Exception:
+            journal = []
+    journal.extend(entries)
+    with open(JOURNAL_FILE, "w") as f:
+        json.dump(journal, f, indent=2)
+
+
 def main():
     log("── Pre-close signal scan started ──")
 
@@ -99,6 +117,8 @@ def main():
     prev = load_state()
     curr = {}
     transitions = []
+    journal_entries = []
+    now_iso = datetime.now().isoformat(timespec="seconds")
 
     universe = [("H", k, v) for k, v in holdings_data.items()]
     if watchlist_ok:
@@ -109,18 +129,33 @@ def main():
         skey = f"{kind}:{key}"
         curr[skey] = sig
         old = prev.get(skey)
-        # skip first-ever sighting, no-change, and insufficient-data noise
-        if old is None or old == sig or "—" in (old, sig):
+        # skip first-ever sighting and no-change
+        if old is None or old == sig:
             continue
-        if sig in UPGRADES:
-            transitions.append(f"🟢 {key}: {old} → {sig}")
-        elif sig in DOWNGRADES and kind == "H":  # exit-side alerts: holdings only
-            transitions.append(f"🔴 {key}: {old} → {sig}")
-        else:
-            log(f"(minor) {key}: {old} → {sig}")
+        alerted = False
+        if "—" not in (old, sig):                # insufficient-data noise never alerts
+            if sig in UPGRADES:
+                transitions.append(f"🟢 {key}: {old} → {sig}")
+                alerted = True
+            elif sig in DOWNGRADES and kind == "H":  # exit-side alerts: holdings only
+                transitions.append(f"🔴 {key}: {old} → {sig}")
+                alerted = True
+            else:
+                log(f"(minor) {key}: {old} → {sig}")
+        # journal every transition — strategy hit-rate analysis later
+        journal_entries.append({
+            "ts": now_iso, "kind": kind, "symbol": key,
+            "from": old, "to": sig,
+            "cmp": (v or {}).get("cmp"), "rsi14": (v or {}).get("rsi14"),
+            "vol_ratio": (v or {}).get("vol_ratio"),
+            "alerted": alerted,
+        })
 
     with open(STATE_FILE, "w") as f:
         json.dump(curr, f, indent=2)
+    append_journal(journal_entries)
+    if journal_entries:
+        log(f"journalled {len(journal_entries)} transition(s)")
 
     if transitions:
         for t in transitions:

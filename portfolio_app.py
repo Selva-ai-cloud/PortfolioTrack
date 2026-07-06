@@ -16,6 +16,7 @@ BASE_DIR            = os.path.dirname(os.path.abspath(__file__))
 HOLDINGS_FILE       = os.path.join(BASE_DIR, "holdings.json")
 HISTORY_FILE        = os.path.join(BASE_DIR, "portfolio_history.json")
 DMA_CACHE_FILE      = os.path.join(BASE_DIR, "dma_cache.json")
+BENCH_CACHE_FILE    = os.path.join(BASE_DIR, "benchmark_cache.json")
 WATCHLIST_FILE      = os.path.join(BASE_DIR, "watchlist.json")
 WL_DMA_CACHE_FILE   = os.path.join(BASE_DIR, "watchlist_dma_cache.json")
 FETCH_SCRIPT        = os.path.join(BASE_DIR, "fetch_eod.py")
@@ -404,6 +405,7 @@ def dashboard():
                 "day_chg": day_chg,
                 "day_chg_rs": day_chg_rs,
                 "prev_close": prev_close,
+                "buy_date": info.get("buy_date"),
             }
         )
 
@@ -454,6 +456,41 @@ def dashboard():
     )
 
 
+# ── Benchmark API (NIFTY 50 for the P&L chart overlay) ───────────────────────
+@app.route("/api/benchmark")
+def api_benchmark():
+    """1y of NIFTY 50 daily closes keyed by chart date label; 4h cache."""
+    if os.path.exists(BENCH_CACHE_FILE):
+        try:
+            with open(BENCH_CACHE_FILE) as f:
+                cache = json.load(f)
+            cached_at = datetime.fromisoformat(cache.get("fetched_at", "2000-01-01"))
+            if datetime.now() - cached_at < timedelta(hours=4) and cache.get("data"):
+                return jsonify(cache["data"])
+        except Exception:
+            pass
+    try:
+        raw = yf.download(tickers="^NSEI", period="1y", interval="1d",
+                          auto_adjust=True, progress=False)
+        try:
+            close = raw.xs("Close", axis=1, level=0)
+            series = close[close.columns[0]].dropna()
+        except (KeyError, TypeError, AttributeError):
+            series = raw["Close"].dropna()
+        # key format matches portfolio_history / chart labels: 17-Jun-26
+        data = {ts.strftime("%d-%b-%y"): round(float(v), 2)
+                for ts, v in series.items()}
+    except Exception as e:
+        return jsonify({"error": str(e)})
+    if data:                                      # never cache a failure
+        try:
+            with open(BENCH_CACHE_FILE, "w") as f:
+                json.dump({"fetched_at": datetime.now().isoformat(), "data": data}, f)
+        except Exception:
+            pass
+    return jsonify(data)
+
+
 # ── Stock CRUD ────────────────────────────────────────────────────────────────
 @app.route("/add-stock", methods=["POST"])
 def add_stock():
@@ -463,7 +500,9 @@ def add_stock():
     avg = float(request.form["avg"])
     qty = int(request.form["qty"])
     broker = request.form.get("broker", "Zerodha")
-    h[symbol] = {"yahoo": yahoo, "avg": avg, "qty": qty, "broker": broker}
+    buy_date = request.form.get("buy_date", "").strip() or None
+    h[symbol] = {"yahoo": yahoo, "avg": avg, "qty": qty, "broker": broker,
+                 "buy_date": buy_date}
     save_holdings(h)
     return redirect(url_for("dashboard"))
 
@@ -477,6 +516,7 @@ def update_stock():
         h[symbol]["avg"] = float(request.form["avg"])
         h[symbol]["yahoo"] = request.form["yahoo"].strip() or None
         h[symbol]["broker"] = request.form.get("broker", "Zerodha")
+        h[symbol]["buy_date"] = request.form.get("buy_date", "").strip() or None
     save_holdings(h)
     return redirect(url_for("dashboard"))
 
@@ -901,11 +941,13 @@ HTML = """<!DOCTYPE html>
             <th class="r d-none d-md-table-cell">200 DMA</th>
             <th class="d-none d-md-table-cell">200 Slope</th>
             <th class="r d-none d-md-table-cell">Stop ₹</th>
+            <th class="r d-none d-md-table-cell"
+                title="Suggested qty risking 1% of portfolio value: (1% × portfolio) ÷ (CMP − stop)">Size @1%</th>
             <th>Signal</th>
           </tr>
         </thead>
         <tbody id="scanner-tbody">
-          <tr><td colspan="11" class="text-center text-muted py-3">⏳ Fetching data…</td></tr>
+          <tr><td colspan="12" class="text-center text-muted py-3">⏳ Fetching data…</td></tr>
         </tbody>
       </table>
     </div>
@@ -931,12 +973,14 @@ HTML = """<!DOCTYPE html>
             <th class="r d-none d-md-table-cell">Vol×</th>
             <th class="r d-none d-md-table-cell">Stop ₹</th>
             <th class="r d-none d-md-table-cell">Off 52w High</th>
+            <th class="r d-none d-md-table-cell"
+                title="Indian equity tax: gains turn long-term (12.5%) after 1 year; short-term is 20%">LTCG</th>
             <th class="d-none d-md-table-cell">Signal</th>
             <th>Why review</th>
           </tr>
         </thead>
         <tbody id="exit-tbody">
-          <tr><td colspan="9" class="text-center text-muted py-3">⏳ Fetching data…</td></tr>
+          <tr><td colspan="10" class="text-center text-muted py-3">⏳ Fetching data…</td></tr>
         </tbody>
       </table>
     </div>
@@ -1019,7 +1063,7 @@ HTML = """<!DOCTYPE html>
             <td style="white-space:nowrap">
               <!-- Edit icon button -->
               <button type="button" class="icon-btn" title="Edit {{ r.stock }}"
-                onclick="openEdit('{{ r.stock }}','{{ r.qty }}','{{ r.avg }}','{{ r.yahoo }}','{{ r.broker }}')">
+                onclick="openEdit('{{ r.stock }}','{{ r.qty }}','{{ r.avg }}','{{ r.yahoo }}','{{ r.broker }}','{{ r.buy_date or '' }}')">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <!-- Circular arrows -->
                   <path d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9c2.39 0 4.56-.93 6.18-2.44"
@@ -1178,6 +1222,11 @@ HTML = """<!DOCTYPE html>
             </div>
           </div>
           <div class="mb-3 mt-2">
+            <label class="form-label fw-semibold">Buy Date</label>
+            <input type="date" class="form-control" name="buy_date">
+            <div class="form-text">Optional — enables the LTCG (1-year) tax timer on the Exit Radar.</div>
+          </div>
+          <div class="mb-3 mt-2">
             <label class="form-label fw-semibold">Broker <span class="text-danger">*</span></label>
             <select class="form-select" name="broker" required>
               <option value="Zerodha">Zerodha</option>
@@ -1224,6 +1273,11 @@ HTML = """<!DOCTYPE html>
               <label class="form-label fw-semibold">Quantity</label>
               <input type="number" min="0" class="form-control" name="qty" id="editQty" required>
             </div>
+          </div>
+          <div class="mb-3 mt-2">
+            <label class="form-label fw-semibold">Buy Date</label>
+            <input type="date" class="form-control" name="buy_date" id="editBuyDate">
+            <div class="form-text">Optional — enables the LTCG (1-year) tax timer on the Exit Radar.</div>
           </div>
           <div class="mb-3 mt-2">
             <label class="form-label fw-semibold">Broker</label>
@@ -1316,12 +1370,44 @@ function buildDatasets(filteredStocks) {
   });
 }
 
+// ── NIFTY 50 benchmark overlay ──────────────────────────────────────────────
+let benchData = null;   // {dateLabel: nifty close}
+fetch('/api/benchmark')
+  .then(r => r.json())
+  .then(d => {
+    if (d && !d.error && Object.keys(d).length) {
+      benchData = d;
+      renderChart(activeStocks);   // re-render with the overlay
+    }
+  })
+  .catch(() => {});
+
+function benchDataset() {
+  if (!benchData) return null;
+  let base = null;   // first chart date with a Nifty close = 0% baseline
+  const pts = dates.map(d => {
+    const c = benchData[d];
+    if (c == null) return null;
+    if (base == null) base = c;
+    return +((c / base - 1) * 100).toFixed(2);
+  });
+  if (base == null) return null;
+  return {
+    label: 'NIFTY 50', data: pts,
+    borderColor: '#555', borderDash: [6, 4], borderWidth: 2,
+    backgroundColor: 'transparent', pointRadius: 0, tension: 0.2, spanGaps: true,
+  };
+}
+
 function renderChart(filteredStocks) {
   activeStocks = filteredStocks;
   if (pnlChart) pnlChart.destroy();
+  const dsets = buildDatasets(filteredStocks);
+  const bench = benchDataset();
+  if (bench) dsets.push(bench);   // appended last so stock indexes stay stable
   pnlChart = new Chart(document.getElementById('pnlChart'), {
     type: 'line',
-    data: { labels: dates, datasets: buildDatasets(filteredStocks) },
+    data: { labels: dates, datasets: dsets },
     options: CHART_OPTIONS,
   });
   // Apply current visibility state
@@ -1613,13 +1699,14 @@ function confirmDelete(btn, stock) {
 }
 
 // ── Edit modal helper ──────────────────────────────────────────────────────
-function openEdit(sym, qty, avg, yahoo, broker) {
+function openEdit(sym, qty, avg, yahoo, broker, buyDate) {
   document.getElementById('editSymbol').value        = sym;
   document.getElementById('editSymbolDisplay').value = sym;
   document.getElementById('editQty').value           = qty;
   document.getElementById('editAvg').value           = avg;
   document.getElementById('editYahoo').value         = yahoo;
   document.getElementById('editBroker').value        = broker || 'Zerodha';
+  document.getElementById('editBuyDate').value       = buyDate || '';
   new bootstrap.Modal(document.getElementById('editModal')).show();
 }
 
@@ -1724,6 +1811,17 @@ function offHighHtml(p) {
   if (p == null) return '<span style="color:#aaa">—</span>';
   const cls = p <= -20 ? 'neg' : (p <= -10 ? 'neu' : '');
   return `<span class="${cls}">${p.toFixed(1)}%</span>`;
+}
+
+// LTCG timer — Indian equity gains turn long-term (12.5% tax) after 365 days.
+function ltcgHtml(buyDate) {
+  if (!buyDate) return '<span style="color:#aaa" title="Set Buy Date via ✏️ Edit">—</span>';
+  const held = Math.floor((Date.now() - new Date(buyDate).getTime()) / 86400000);
+  if (isNaN(held) || held < 0) return '<span style="color:#aaa">—</span>';
+  if (held >= 365) return '<span class="pos" title="Long-term — 12.5% tax">LT ✓</span>';
+  const left = 365 - held;
+  const cls  = left <= 60 ? 'neu' : '';   // amber when the boundary is near
+  return `<span class="${cls}" title="Short-term (20% tax) until then">${left}d to LT</span>`;
 }
 
 function signalHtml(s) {
@@ -1834,7 +1932,7 @@ function renderScanner(data) {
 
   const tbody = document.getElementById('scanner-tbody');
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted py-3">No actionable setups right now</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" class="text-center text-muted py-3">No actionable setups right now</td></tr>';
     return;
   }
   tbody.innerHTML = rows.map(r => `
@@ -1849,8 +1947,19 @@ function renderScanner(data) {
       <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.dma200)}">${fmt(r.dma200)}</td>
       <td class="d-none d-md-table-cell">${slopeHtml(r.dma200_slope)}</td>
       <td class="r d-none d-md-table-cell" style="color:#888">${fmt(r.stop)}</td>
+      <td class="r d-none d-md-table-cell">${sizeHtml(r.cmp, r.stop)}</td>
       <td>${signalHtml(r.signal)}</td>
     </tr>`).join('');
+}
+
+// Suggested position size risking 1% of current portfolio value on the stop.
+function sizeHtml(cmp, stop) {
+  if (cmp == null || stop == null || cmp <= stop)
+    return '<span style="color:#aaa">—</span>';
+  const riskBudget = calcStats(allRows).curr * 0.01;
+  const qty = Math.floor(riskBudget / (cmp - stop));
+  if (!qty) return '<span style="color:#aaa">—</span>';
+  return `<span title="risk ₹${(cmp - stop).toFixed(2)}/share, ~₹${Math.round(qty * cmp).toLocaleString('en-IN')} outlay">${qty}</span>`;
 }
 
 // ── Exit Radar — holdings needing exit review ───────────────────────────────
@@ -1888,7 +1997,7 @@ function renderExitRadar(data) {
     </span>`;
 
   if (!flagged.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">✅ Nothing needs exit review right now</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-3">✅ Nothing needs exit review right now</td></tr>';
     return;
   }
   tbody.innerHTML = flagged.map(({ r, d, reasons }) => {
@@ -1903,6 +2012,7 @@ function renderExitRadar(data) {
       <td class="r d-none d-md-table-cell">${volHtml(d.vol_ratio)}</td>
       <td class="r d-none d-md-table-cell" style="color:#888">${fmt(d.stop)}</td>
       <td class="r d-none d-md-table-cell">${offHighHtml(d.off_high_pct)}</td>
+      <td class="r d-none d-md-table-cell">${ltcgHtml(r.buy_date)}</td>
       <td class="d-none d-md-table-cell">${signalHtml(d.signal)}</td>
       <td>${reasons.join('')}</td>
     </tr>`;
@@ -1915,12 +2025,12 @@ function scannerFetchFailed(detail) {
     + 'Yahoo Finance may be rate-limiting.</span>'
     + '<button class="dma-refresh-btn" style="margin-left:auto" onclick="loadScanner()">⟳ Retry</button>';
   document.getElementById('scanner-tbody').innerHTML =
-    '<tr><td colspan="11" class="text-center text-muted py-3">'
+    '<tr><td colspan="12" class="text-center text-muted py-3">'
     + (detail ? 'Error: ' + detail : 'No data — click Retry above') + '</td></tr>';
   document.getElementById('exit-pills').innerHTML =
     '<span style="font-size:.78rem;color:#c0392b">⚠️ No data — retry from the scanner above.</span>';
   document.getElementById('exit-tbody').innerHTML =
-    '<tr><td colspan="9" class="text-center text-muted py-3">No data</td></tr>';
+    '<tr><td colspan="10" class="text-center text-muted py-3">No data</td></tr>';
 }
 
 function loadScanner() {

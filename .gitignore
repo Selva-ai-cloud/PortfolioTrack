@@ -23,6 +23,10 @@ launch_verify.txt
 flask.log
 # last-scan signal snapshot (written by signal_scan.py)
 signal_state.json
+# signal transition history (written by signal_scan.py)
+signal_journal.json
+# NIFTY 50 cache for the chart overlay
+benchmark_cache.json
 
 # ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
