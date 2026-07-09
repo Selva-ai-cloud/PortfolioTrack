@@ -521,6 +521,29 @@ def update_stock():
     return redirect(url_for("dashboard"))
 
 
+@app.route("/add-purchase", methods=["POST"])
+def add_purchase():
+    """Average an additional purchase into an existing holding:
+    qty adds up, avg becomes the weighted mean of old and new lots."""
+    h = load_holdings()
+    symbol = request.form["symbol"].strip().upper()
+    try:
+        add_qty   = int(request.form["add_qty"])
+        add_price = float(request.form["add_price"])
+    except (KeyError, ValueError):
+        return redirect(url_for("dashboard"))
+    if symbol in h and add_qty > 0 and add_price > 0:
+        old_qty = h[symbol]["qty"]
+        old_avg = h[symbol]["avg"]
+        new_qty = old_qty + add_qty
+        h[symbol]["qty"] = new_qty
+        h[symbol]["avg"] = round((old_avg * old_qty + add_price * add_qty) / new_qty, 6)
+        # buy_date stays as the FIRST purchase date — the LTCG timer is
+        # conservative for averaged lots (real tax is FIFO per lot).
+        save_holdings(h)
+    return redirect(url_for("dashboard"))
+
+
 @app.route("/delete-stock", methods=["POST"])
 def delete_stock():
     h = load_holdings()
@@ -1297,6 +1320,32 @@ HTML = """<!DOCTYPE html>
           <button type="submit" class="btn btn-green text-white">Update</button>
         </div>
       </form>
+
+      <!-- ── Add purchase (averages into the saved holding) ── -->
+      <form action="/add-purchase" method="post" class="border-top" style="background:#f8f9fc">
+        <input type="hidden" name="symbol" id="apSymbol">
+        <div class="px-3 pt-3 pb-1">
+          <div class="fw-semibold mb-2" style="font-size:.88rem">➕ Add purchase (average in)</div>
+          <div class="row g-2">
+            <div class="col">
+              <label class="form-label" style="font-size:.78rem">Extra Qty</label>
+              <input type="number" min="1" class="form-control form-control-sm"
+                     name="add_qty" id="apQty" placeholder="0" oninput="previewAvg()">
+            </div>
+            <div class="col">
+              <label class="form-label" style="font-size:.78rem">Buy Price ₹</label>
+              <input type="number" step="0.000001" min="0" class="form-control form-control-sm"
+                     name="add_price" id="apPrice" placeholder="0.00" oninput="previewAvg()">
+            </div>
+          </div>
+          <div class="form-text mt-2" id="apPreview">
+            Adds to the saved qty and recalculates the weighted average price.
+          </div>
+        </div>
+        <div class="px-3 pb-3 text-end">
+          <button type="submit" class="btn btn-sm btn-navy">Add &amp; Average</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
@@ -1712,7 +1761,30 @@ function openEdit(sym, qty, avg, yahoo, broker, buyDate) {
   document.getElementById('editYahoo').value         = yahoo;
   document.getElementById('editBroker').value        = broker || 'Zerodha';
   document.getElementById('editBuyDate').value       = buyDate || '';
+  // reset the add-purchase section
+  document.getElementById('apSymbol').value  = sym;
+  document.getElementById('apQty').value     = '';
+  document.getElementById('apPrice').value   = '';
+  document.getElementById('apPreview').textContent =
+    'Adds to the saved qty and recalculates the weighted average price.';
   new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+
+// Live preview: old lot + new lot → combined qty and weighted average.
+function previewAvg() {
+  const oldQty = parseFloat(document.getElementById('editQty').value) || 0;
+  const oldAvg = parseFloat(document.getElementById('editAvg').value) || 0;
+  const aq     = parseFloat(document.getElementById('apQty').value)   || 0;
+  const ap     = parseFloat(document.getElementById('apPrice').value) || 0;
+  const out    = document.getElementById('apPreview');
+  if (aq > 0 && ap > 0 && oldQty > 0) {
+    const newQty = oldQty + aq;
+    const newAvg = (oldQty * oldAvg + aq * ap) / newQty;
+    out.innerHTML = `New holding: <b>${newQty}</b> shares @ avg <b>₹${newAvg.toFixed(2)}</b>`
+      + ` &nbsp;<span style="opacity:.65">(was ${oldQty} @ ₹${oldAvg.toFixed(2)})</span>`;
+  } else {
+    out.textContent = 'Adds to the saved qty and recalculates the weighted average price.';
+  }
 }
 
 // ── Holdings / Technical tab switcher ─────────────────────────────────────
