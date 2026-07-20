@@ -2234,8 +2234,30 @@ let fundLoaded    = false;
 let fundData      = {};     // {stockKey: record}  — also feeds the Scanner's Quality column
 let fundRows      = [];
 let fundSortState = { col: null, dir: 1 };
+let fundActive    = new Set();   // pill filters; empty = show all
 
 const QUALITY_ORDER = { 'Strong': 0, 'Fair': 1, 'Weak': 2 };
+
+// Compose current sort + quality filters, then render.
+function refreshFundView() {
+  let rows = fundRows;
+  if (fundSortState.col) {
+    const get = fundSortState.col === 'quality'
+      ? (r => QUALITY_ORDER[r.quality] ?? 9)
+      : (r => r[fundSortState.col]);
+    rows = sortRowsBy(rows, fundSortState.dir, get);
+  }
+  if (fundActive.size) rows = rows.filter(r => fundActive.has(r.quality));
+  renderFundRows(rows,
+    fundActive.size ? 'No stocks match the active filter — click the pill again to clear' : null);
+}
+
+function toggleFundFilter(q) {
+  if (fundActive.has(q)) fundActive.delete(q); else fundActive.add(q);
+  document.querySelectorAll('#fund-pills .scanner-pill.clickable').forEach(p =>
+    p.classList.toggle('on', fundActive.has(p.dataset.q)));
+  refreshFundView();
+}
 
 // Colour a metric green/amber/red. `hb` = higher is better.
 function fnum(v, good, bad, hb, suffix, dp) {
@@ -2272,6 +2294,9 @@ function loadFundamentals() {
       }
       fundLoaded = true;
       fundData   = resp.data;
+      fundSortState = { col: null, dir: 1 };   // fresh data → default order, filters cleared
+      fundActive    = new Set();
+      clearSort('#fund-table');
       buildFundRows();
       renderFundPills(resp.fetched_at);
       renderFundRows(fundRows);
@@ -2297,18 +2322,19 @@ function renderFundPills(fetchedAt) {
   const when = fetchedAt ? new Date(fetchedAt).toLocaleDateString('en-IN',
                   { day: 'numeric', month: 'short' }) : '—';
   document.getElementById('fund-pills').innerHTML = `
-    <span class="scanner-pill" style="background:#C6EFCE;color:#1c5e2e">Strong <strong>${n('Strong')}</strong></span>
-    <span class="scanner-pill" style="background:#FFEB9C;color:#7d6608">Fair <strong>${n('Fair')}</strong></span>
-    <span class="scanner-pill" style="background:#FFC7CE;color:#9b1c1c">Weak <strong>${n('Weak')}</strong></span>
+    <span class="scanner-pill clickable" data-q="Strong" title="Click to filter" onclick="toggleFundFilter('Strong')" style="background:#C6EFCE;color:#1c5e2e">Strong <strong>${n('Strong')}</strong></span>
+    <span class="scanner-pill clickable" data-q="Fair"   title="Click to filter" onclick="toggleFundFilter('Fair')"   style="background:#FFEB9C;color:#7d6608">Fair <strong>${n('Fair')}</strong></span>
+    <span class="scanner-pill clickable" data-q="Weak"   title="Click to filter" onclick="toggleFundFilter('Weak')"   style="background:#FFC7CE;color:#9b1c1c">Weak <strong>${n('Weak')}</strong></span>
     <span style="font-size:.72rem;color:#888;margin-left:auto">
       Updated ${when} · quarterly data · * not meaningful for financials
     </span>`;
 }
 
-function renderFundRows(rows) {
+function renderFundRows(rows, emptyMsg) {
   const tbody = document.getElementById('fund-tbody');
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="11" class="dma-loading">No data</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="dma-loading">'
+      + (emptyMsg || 'No data') + '</td></tr>';
     return;
   }
   tbody.innerHTML = rows.map(r => `
@@ -2331,8 +2357,7 @@ function sortFundTable(col) {
   fundSortState.dir = (fundSortState.col === col) ? -fundSortState.dir : 1;
   fundSortState.col = col;
   markSort('#fund-table', `sortFundTable('${col}')`, fundSortState.dir);
-  const get = col === 'quality' ? (r => QUALITY_ORDER[r.quality] ?? 9) : (r => r[col]);
-  renderFundRows(sortRowsBy(fundRows, fundSortState.dir, get));
+  refreshFundView();
 }
 
 // ── Exit Radar — holdings needing exit review ───────────────────────────────
