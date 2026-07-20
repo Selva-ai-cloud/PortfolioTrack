@@ -17,6 +17,7 @@ HOLDINGS_FILE       = os.path.join(BASE_DIR, "holdings.json")
 HISTORY_FILE        = os.path.join(BASE_DIR, "portfolio_history.json")
 DMA_CACHE_FILE      = os.path.join(BASE_DIR, "dma_cache.json")
 BENCH_CACHE_FILE    = os.path.join(BASE_DIR, "benchmark_cache.json")
+FUND_CACHE_FILE     = os.path.join(BASE_DIR, "fundamentals_cache.json")
 WATCHLIST_FILE      = os.path.join(BASE_DIR, "watchlist.json")
 WL_DMA_CACHE_FILE   = os.path.join(BASE_DIR, "watchlist_dma_cache.json")
 FETCH_SCRIPT        = os.path.join(BASE_DIR, "fetch_eod.py")
@@ -456,6 +457,69 @@ def dashboard():
     )
 
 
+# ── Fundamentals: quality scoring ─────────────────────────────────────────────
+def _quality(f):
+    """
+    Score a fundamentals record into Strong / Fair / Weak.
+
+    Each available metric contributes points; the total is normalised by the
+    points actually in play, so a stock missing ROCE isn't penalised for it.
+    Current Ratio and Debt/Equity are skipped for financials, where leverage
+    is the business model rather than a warning sign.
+    """
+    if not isinstance(f, dict):
+        return None
+    got = 0.0      # points earned
+    ceil = 0.0     # points available
+
+    def score(value, good, bad, weight=1.0, higher_better=True):
+        nonlocal got, ceil
+        if value is None:
+            return
+        ceil += weight
+        if higher_better:
+            if value >= good:  got += weight
+            elif value > bad:  got += weight * 0.5
+        else:
+            if value <= good:  got += weight
+            elif value < bad:  got += weight * 0.5
+
+    score(f.get("roe"),           20, 12, 1.5)
+    score(f.get("roce"),          18, 10, 1.5)
+    score(f.get("sales_growth"),  12,  0, 1.0)
+    score(f.get("profit_growth"), 12,  0, 1.5)
+    score(f.get("pe"),            20, 40, 1.0, higher_better=False)
+    score(f.get("pb"),             3,  8, 0.5, higher_better=False)
+    score(f.get("peg"),            1,  2, 1.0, higher_better=False)
+    if not f.get("is_financial"):
+        score(f.get("de"),            0.5, 2.0, 1.0, higher_better=False)
+        score(f.get("current_ratio"), 1.5, 1.0, 0.5)
+
+    if ceil < 3:               # too little data to judge
+        return None
+    ratio = got / ceil
+    return "Strong" if ratio >= 0.65 else ("Fair" if ratio >= 0.40 else "Weak")
+
+
+@app.route("/api/fundamentals")
+def api_fundamentals():
+    """Serve the weekly fundamentals cache, annotated with a quality grade.
+    Scoring happens here (not in the fetcher) so thresholds can change
+    without a 220-request re-fetch."""
+    if not os.path.exists(FUND_CACHE_FILE):
+        return jsonify({"error": "No fundamentals yet — run fetch_fundamentals.py"})
+    try:
+        with open(FUND_CACHE_FILE) as f:
+            cache = json.load(f)
+    except Exception as e:
+        return jsonify({"error": f"cache unreadable: {e}"})
+    data = cache.get("data") or {}
+    for rec in data.values():
+        if isinstance(rec, dict):
+            rec["quality"] = _quality(rec)
+    return jsonify({"data": data, "fetched_at": cache.get("fetched_at")})
+
+
 # ── Benchmark API (NIFTY 50 for the P&L chart overlay) ───────────────────────
 @app.route("/api/benchmark")
 def api_benchmark():
@@ -759,6 +823,19 @@ HTML = """<!DOCTYPE html>
   .vol-neu{color:#555}
   .vol-low{color:#999}
 
+  /* ── Fundamentals tab ── */
+  .fund-group th{background:#e8ebf0!important;color:#1F3864!important;font-weight:600;
+                 font-size:.72rem;text-align:center;padding:3px 8px;position:sticky;top:0;z-index:3}
+  .fund-group th.fg-sep{border-right:2px solid #fff;border-left:2px solid #fff}
+  #fund-table thead tr:last-child th{top:23px}   /* sit below the group row */
+  .q-strong{background:#C6EFCE;color:#1c5e2e;padding:2px 9px;border-radius:10px;font-size:.74rem;font-weight:700}
+  .q-fair  {background:#FFEB9C;color:#7d6608;padding:2px 9px;border-radius:10px;font-size:.74rem;font-weight:600}
+  .q-weak  {background:#FFC7CE;color:#9b1c1c;padding:2px 9px;border-radius:10px;font-size:.74rem;font-weight:600}
+  .f-good{color:#1c8c44;font-weight:600}
+  .f-mid {color:#8a6800;font-weight:500}
+  .f-bad {color:#c0392b;font-weight:600}
+  .f-na  {color:#bbb}
+
   /* ── Exit Radar reason badges ── */
   .ex-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.72rem;
             font-weight:600;white-space:nowrap;margin:1px 3px 1px 0}
@@ -972,10 +1049,12 @@ HTML = """<!DOCTYPE html>
             <th class="r sortable d-none d-md-table-cell" onclick="sortScannerTable('size')"
                 title="Suggested qty risking 1% of portfolio value: (1% × portfolio) ÷ (CMP − stop)">Size @1% <span class="si"></span></th>
             <th class="sortable" onclick="sortScannerTable('signal')">Signal <span class="si"></span></th>
+            <th class="sortable" onclick="sortScannerTable('quality')"
+                title="Fundamental grade from the Fundamentals tab — a Buy Setup on a Strong business is higher conviction">Quality <span class="si"></span></th>
           </tr>
         </thead>
         <tbody id="scanner-tbody">
-          <tr><td colspan="12" class="text-center text-muted py-3">⏳ Fetching data…</td></tr>
+          <tr><td colspan="13" class="text-center text-muted py-3">⏳ Fetching data…</td></tr>
         </tbody>
       </table>
     </div>
@@ -1043,6 +1122,7 @@ HTML = """<!DOCTYPE html>
         <button class="card-tab active" id="tab-holdings"  onclick="switchHoldingsTab('holdings')">📋 Holdings</button>
         <button class="card-tab"        id="tab-technical" onclick="switchHoldingsTab('technical')">📊 Technical</button>
         <button class="card-tab"        id="tab-watchlist" onclick="switchHoldingsTab('watchlist')">👁 Watchlist</button>
+        <button class="card-tab"        id="tab-fundamentals" onclick="switchHoldingsTab('fundamentals')">🏦 Fundamentals</button>
       </div>
       <span class="fw-normal opacity-75" style="font-size:.78rem" id="filter-label">All {{ rows|length }} stocks</span>
     </div>
@@ -1211,6 +1291,42 @@ HTML = """<!DOCTYPE html>
         </table>
       </div>
     </div><!-- /watchlist-panel -->
+
+    <!-- ── FUNDAMENTALS PANEL ── -->
+    <div id="fundamentals-panel" style="display:none">
+      <div class="scanner-summary-bar" id="fund-pills">
+        <span style="font-size:.78rem;color:#555">Loading…</span>
+      </div>
+      <div class="tbl-wrap">
+        <table class="table table-hover table-sm mb-0" id="fund-table">
+          <thead>
+            <tr class="fund-group">
+              <th></th>
+              <th colspan="3" class="fg-sep">Valuation</th>
+              <th colspan="2" class="fg-sep d-none d-md-table-cell">Health</th>
+              <th colspan="4" class="fg-sep">Returns &amp; growth</th>
+              <th></th>
+            </tr>
+            <tr>
+              <th class="sortable" onclick="sortFundTable('stock')">Stock <span class="si"></span></th>
+              <th class="r sortable" onclick="sortFundTable('pe')">P/E <span class="si"></span></th>
+              <th class="r sortable d-none d-md-table-cell" onclick="sortFundTable('peg')">PEG <span class="si"></span></th>
+              <th class="r sortable d-none d-md-table-cell" onclick="sortFundTable('pb')">P/B <span class="si"></span></th>
+              <th class="r sortable d-none d-md-table-cell" onclick="sortFundTable('current_ratio')">Curr <span class="si"></span></th>
+              <th class="r sortable d-none d-md-table-cell" onclick="sortFundTable('de')">D/E <span class="si"></span></th>
+              <th class="r sortable" onclick="sortFundTable('roe')">ROE <span class="si"></span></th>
+              <th class="r sortable d-none d-md-table-cell" onclick="sortFundTable('roce')">ROCE <span class="si"></span></th>
+              <th class="r sortable d-none d-md-table-cell" onclick="sortFundTable('sales_growth')">Sales <span class="si"></span></th>
+              <th class="r sortable" onclick="sortFundTable('profit_growth')">Profit <span class="si"></span></th>
+              <th class="sortable" onclick="sortFundTable('quality')">Quality <span class="si"></span></th>
+            </tr>
+          </thead>
+          <tbody id="fund-tbody">
+            <tr><td colspan="11" class="dma-loading">Click the tab to load fundamentals…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div><!-- /fundamentals-panel -->
 
   </div><!-- /card -->
 
@@ -1744,6 +1860,7 @@ renderChart(stocks);
 renderHeroSummary('All');
 renderAllTimeMovers(allRows);
 loadScanner();
+loadFundamentals();
 
 // ── Delete confirmation ────────────────────────────────────────────────────
 function confirmDelete(btn, stock) {
@@ -1793,12 +1910,13 @@ let dmaRows   = [];
 let dmaSortState = { col: null, dir: 1 };
 
 function switchHoldingsTab(tab) {
-  ['holdings','technical','watchlist'].forEach(t => {
+  ['holdings','technical','watchlist','fundamentals'].forEach(t => {
     document.getElementById(t + '-panel').style.display = tab === t ? '' : 'none';
     document.getElementById('tab-' + t).classList.toggle('active', tab === t);
   });
   if (tab === 'technical' && !dmaLoaded) loadDmaData(false);
   if (tab === 'watchlist' && !wlLoaded)  loadWatchlistDma(false);
+  if (tab === 'fundamentals' && !fundLoaded) loadFundamentals();
 }
 
 // ── DMA / Signal helpers ───────────────────────────────────────────────────
@@ -2019,8 +2137,9 @@ let scSortState   = { col: null, dir: 1 };
 let scActive      = new Set();   // pill filters; empty = show all
 
 function scGetter(col) {
-  return col === 'signal' ? (r => SIGNAL_ORDER[r.signal] ?? 9)
-       : col === 'size'   ? (r => sizeQty(r.cmp, r.stop))
+  return col === 'signal'  ? (r => SIGNAL_ORDER[r.signal] ?? 9)
+       : col === 'size'    ? (r => sizeQty(r.cmp, r.stop))
+       : col === 'quality' ? (r => QUALITY_ORDER[(fundData[r.stock] || {}).quality] ?? 9)
        : (r => r[col]);
 }
 
@@ -2068,7 +2187,7 @@ function renderScanner(data) {
 function renderScannerRows(rows, emptyMsg) {
   const tbody = document.getElementById('scanner-tbody');
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="12" class="text-center text-muted py-3">'
+    tbody.innerHTML = '<tr><td colspan="13" class="text-center text-muted py-3">'
       + (emptyMsg || 'No actionable setups right now') + '</td></tr>';
     return;
   }
@@ -2086,6 +2205,7 @@ function renderScannerRows(rows, emptyMsg) {
       <td class="r d-none d-md-table-cell" style="color:#888">${fmt(r.stop)}</td>
       <td class="r d-none d-md-table-cell">${sizeHtml(r.cmp, r.stop)}</td>
       <td>${signalHtml(r.signal)}</td>
+      <td>${qualityHtml((fundData[r.stock] || {}).quality)}</td>
     </tr>`).join('');
 }
 
@@ -2107,6 +2227,112 @@ function sizeHtml(cmp, stop) {
   const qty = sizeQty(cmp, stop);
   if (qty == null) return '<span style="color:#aaa">—</span>';
   return `<span title="risk ₹${(cmp - stop).toFixed(2)}/share, ~₹${Math.round(qty * cmp).toLocaleString('en-IN')} outlay">${qty}</span>`;
+}
+
+// ── Fundamentals tab ────────────────────────────────────────────────────────
+let fundLoaded    = false;
+let fundData      = {};     // {stockKey: record}  — also feeds the Scanner's Quality column
+let fundRows      = [];
+let fundSortState = { col: null, dir: 1 };
+
+const QUALITY_ORDER = { 'Strong': 0, 'Fair': 1, 'Weak': 2 };
+
+// Colour a metric green/amber/red. `hb` = higher is better.
+function fnum(v, good, bad, hb, suffix, dp) {
+  if (v == null) return '<span class="f-na">—</span>';
+  const cls = hb ? (v >= good ? 'f-good' : (v > bad ? 'f-mid' : 'f-bad'))
+                 : (v <= good ? 'f-good' : (v < bad ? 'f-mid' : 'f-bad'));
+  return `<span class="${cls}">${v.toFixed(dp ?? 1)}${suffix || ''}</span>`;
+}
+
+// Current Ratio / D/E don't carry their usual meaning for lenders.
+function fnumFin(v, isFin, good, bad, hb, suffix, dp) {
+  if (isFin) return `<span class="f-na" title="Not meaningful for banks/NBFCs — leverage is the business model">${v == null ? '—' : v.toFixed(dp ?? 2) + (suffix||'')}*</span>`;
+  return fnum(v, good, bad, hb, suffix, dp);
+}
+
+function qualityHtml(q) {
+  if (!q) return '<span class="f-na" title="Not enough data to grade">—</span>';
+  const cls = q === 'Strong' ? 'q-strong' : (q === 'Fair' ? 'q-fair' : 'q-weak');
+  return `<span class="${cls}">${q}</span>`;
+}
+
+function loadFundamentals() {
+  const tbody = document.getElementById('fund-tbody');
+  tbody.innerHTML = '<tr><td colspan="11" class="dma-loading">⏳ Loading fundamentals…</td></tr>';
+  fetch('/api/fundamentals')
+    .then(r => r.json())
+    .then(resp => {
+      if (!resp || resp.error || !resp.data || !Object.keys(resp.data).length) {
+        tbody.innerHTML = '<tr><td colspan="11" class="dma-loading text-danger">'
+          + '⚠️ No fundamentals data yet.<br><span style="font-size:.75rem;opacity:.75">'
+          + 'Run <code>python3 fetch_fundamentals.py</code> (takes a few minutes) — it refreshes weekly.'
+          + (resp && resp.error ? '<br>' + resp.error : '') + '</span></td></tr>';
+        return;
+      }
+      fundLoaded = true;
+      fundData   = resp.data;
+      buildFundRows();
+      renderFundPills(resp.fetched_at);
+      renderFundRows(fundRows);
+      if (_scannerCache) renderScanner(_scannerCache);   // fill the Quality column
+    })
+    .catch(err => {
+      tbody.innerHTML = `<tr><td colspan="11" class="dma-loading text-danger">Error: ${err}</td></tr>`;
+    });
+}
+
+// Holdings for the active broker, plus watchlist entries.
+function buildFundRows() {
+  const inScope = new Set(allRows
+    .filter(r => activeBroker === 'All' || r.broker === activeBroker)
+    .map(r => r.stock));
+  fundRows = Object.entries(fundData)
+    .filter(([k, v]) => v.kind === 'W' || inScope.has(k))
+    .map(([k, v]) => ({ stock: k, ...v }));
+}
+
+function renderFundPills(fetchedAt) {
+  const n = q => fundRows.filter(r => r.quality === q).length;
+  const when = fetchedAt ? new Date(fetchedAt).toLocaleDateString('en-IN',
+                  { day: 'numeric', month: 'short' }) : '—';
+  document.getElementById('fund-pills').innerHTML = `
+    <span class="scanner-pill" style="background:#C6EFCE;color:#1c5e2e">Strong <strong>${n('Strong')}</strong></span>
+    <span class="scanner-pill" style="background:#FFEB9C;color:#7d6608">Fair <strong>${n('Fair')}</strong></span>
+    <span class="scanner-pill" style="background:#FFC7CE;color:#9b1c1c">Weak <strong>${n('Weak')}</strong></span>
+    <span style="font-size:.72rem;color:#888;margin-left:auto">
+      Updated ${when} · quarterly data · * not meaningful for financials
+    </span>`;
+}
+
+function renderFundRows(rows) {
+  const tbody = document.getElementById('fund-tbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="11" class="dma-loading">No data</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td class="fw-bold">${r.stock}${r.kind === 'W' ? ' <span style="font-size:.65rem;color:#888;font-weight:400">WL</span>' : ''}</td>
+      <td class="r">${fnum(r.pe, 20, 40, false, '', 1)}</td>
+      <td class="r d-none d-md-table-cell">${fnum(r.peg, 1, 2, false, '', 2)}</td>
+      <td class="r d-none d-md-table-cell">${fnum(r.pb, 3, 8, false, '', 2)}</td>
+      <td class="r d-none d-md-table-cell">${fnumFin(r.current_ratio, r.is_financial, 1.5, 1.0, true, '', 2)}</td>
+      <td class="r d-none d-md-table-cell">${fnumFin(r.de, r.is_financial, 0.5, 2.0, false, 'x', 2)}</td>
+      <td class="r">${fnum(r.roe, 20, 12, true, '%', 1)}</td>
+      <td class="r d-none d-md-table-cell">${fnum(r.roce, 18, 10, true, '%', 1)}</td>
+      <td class="r d-none d-md-table-cell">${fnum(r.sales_growth, 12, 0, true, '%', 1)}</td>
+      <td class="r">${fnum(r.profit_growth, 12, 0, true, '%', 1)}</td>
+      <td>${qualityHtml(r.quality)}</td>
+    </tr>`).join('');
+}
+
+function sortFundTable(col) {
+  fundSortState.dir = (fundSortState.col === col) ? -fundSortState.dir : 1;
+  fundSortState.col = col;
+  markSort('#fund-table', `sortFundTable('${col}')`, fundSortState.dir);
+  const get = col === 'quality' ? (r => QUALITY_ORDER[r.quality] ?? 9) : (r => r[col]);
+  renderFundRows(sortRowsBy(fundRows, fundSortState.dir, get));
 }
 
 // ── Exit Radar — holdings needing exit review ───────────────────────────────
@@ -2237,7 +2463,7 @@ function scannerFetchFailed(detail) {
     + 'Yahoo Finance may be rate-limiting.</span>'
     + '<button class="dma-refresh-btn" style="margin-left:auto" onclick="loadScanner()">⟳ Retry</button>';
   document.getElementById('scanner-tbody').innerHTML =
-    '<tr><td colspan="12" class="text-center text-muted py-3">'
+    '<tr><td colspan="13" class="text-center text-muted py-3">'
     + (detail ? 'Error: ' + detail : 'No data — click Retry above') + '</td></tr>';
   document.getElementById('exit-pills').innerHTML =
     '<span style="font-size:.78rem;color:#c0392b">⚠️ No data — retry from the scanner above.</span>';

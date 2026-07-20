@@ -45,3 +45,5 @@ env/
 .DS_Store
 .AppleDouble
 .LSOverride
+# weekly fundamentals cache (written by fetch_fundamentals.py)
+fundamentals_cache.json
