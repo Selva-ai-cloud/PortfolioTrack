@@ -835,6 +835,7 @@ HTML = """<!DOCTYPE html>
   .f-mid {color:#8a6800;font-weight:500}
   .f-bad {color:#c0392b;font-weight:600}
   .f-na  {color:#bbb}
+  .pill-div{width:1px;height:18px;background:#c3cbd6;margin:0 2px}
 
   /* ── Exit Radar reason badges ── */
   .ex-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.72rem;
@@ -2234,11 +2235,13 @@ let fundLoaded    = false;
 let fundData      = {};     // {stockKey: record}  — also feeds the Scanner's Quality column
 let fundRows      = [];
 let fundSortState = { col: null, dir: 1 };
-let fundActive    = new Set();   // pill filters; empty = show all
+let fundActive    = new Set();   // quality pill filters; empty = show all
+let fundKind      = new Set();   // source filter: 'H' holdings / 'W' watchlist
 
 const QUALITY_ORDER = { 'Strong': 0, 'Fair': 1, 'Weak': 2 };
 
-// Compose current sort + quality filters, then render.
+// Compose current sort + both filter axes, then render.
+// Within an axis the pills are OR; the two axes AND together.
 function refreshFundView() {
   let rows = fundRows;
   if (fundSortState.col) {
@@ -2247,15 +2250,28 @@ function refreshFundView() {
       : (r => r[fundSortState.col]);
     rows = sortRowsBy(rows, fundSortState.dir, get);
   }
+  if (fundKind.size)   rows = rows.filter(r => fundKind.has(r.kind));
   if (fundActive.size) rows = rows.filter(r => fundActive.has(r.quality));
   renderFundRows(rows,
-    fundActive.size ? 'No stocks match the active filter — click the pill again to clear' : null);
+    (fundActive.size || fundKind.size)
+      ? 'No stocks match the active filters — click the pills again to clear' : null);
+}
+
+function syncFundPills() {
+  document.querySelectorAll('#fund-pills .scanner-pill.clickable').forEach(p =>
+    p.classList.toggle('on', p.dataset.q ? fundActive.has(p.dataset.q)
+                                         : fundKind.has(p.dataset.kind)));
 }
 
 function toggleFundFilter(q) {
   if (fundActive.has(q)) fundActive.delete(q); else fundActive.add(q);
-  document.querySelectorAll('#fund-pills .scanner-pill.clickable').forEach(p =>
-    p.classList.toggle('on', fundActive.has(p.dataset.q)));
+  syncFundPills();
+  refreshFundView();
+}
+
+function toggleFundKind(k) {
+  if (fundKind.has(k)) fundKind.delete(k); else fundKind.add(k);
+  syncFundPills();
   refreshFundView();
 }
 
@@ -2296,6 +2312,7 @@ function loadFundamentals() {
       fundData   = resp.data;
       fundSortState = { col: null, dir: 1 };   // fresh data → default order, filters cleared
       fundActive    = new Set();
+      fundKind      = new Set();
       clearSort('#fund-table');
       buildFundRows();
       renderFundPills(resp.fetched_at);
@@ -2319,15 +2336,20 @@ function buildFundRows() {
 
 function renderFundPills(fetchedAt) {
   const n = q => fundRows.filter(r => r.quality === q).length;
+  const k = kind => fundRows.filter(r => r.kind === kind).length;
   const when = fetchedAt ? new Date(fetchedAt).toLocaleDateString('en-IN',
                   { day: 'numeric', month: 'short' }) : '—';
   document.getElementById('fund-pills').innerHTML = `
     <span class="scanner-pill clickable" data-q="Strong" title="Click to filter" onclick="toggleFundFilter('Strong')" style="background:#C6EFCE;color:#1c5e2e">Strong <strong>${n('Strong')}</strong></span>
     <span class="scanner-pill clickable" data-q="Fair"   title="Click to filter" onclick="toggleFundFilter('Fair')"   style="background:#FFEB9C;color:#7d6608">Fair <strong>${n('Fair')}</strong></span>
     <span class="scanner-pill clickable" data-q="Weak"   title="Click to filter" onclick="toggleFundFilter('Weak')"   style="background:#FFC7CE;color:#9b1c1c">Weak <strong>${n('Weak')}</strong></span>
+    <span class="pill-div"></span>
+    <span class="scanner-pill clickable" data-kind="H" title="Show only holdings"  onclick="toggleFundKind('H')" style="background:#dfe6f0;color:#1F3864">📋 Holdings <strong>${k('H')}</strong></span>
+    <span class="scanner-pill clickable" data-kind="W" title="Show only watchlist" onclick="toggleFundKind('W')" style="background:#dfe6f0;color:#1F3864">👁 Watchlist <strong>${k('W')}</strong></span>
     <span style="font-size:.72rem;color:#888;margin-left:auto">
       Updated ${when} · quarterly data · * not meaningful for financials
     </span>`;
+  syncFundPills();
 }
 
 function renderFundRows(rows, emptyMsg) {
