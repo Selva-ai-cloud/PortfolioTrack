@@ -136,6 +136,22 @@ def save_watchlist(wl):
         json.dump(wl, f, indent=2)
 
 
+def _live_price(sym):
+    """Latest live/last price for one symbol via fast_info. Used only to repair
+    a stale CMP when Yahoo's daily history is missing the most recent bar
+    (a known NSE data-gap quirk). Returns None on any failure."""
+    try:
+        fi = yf.Ticker(sym).fast_info
+        px = None
+        try:
+            px = fi.last_price
+        except Exception:
+            px = fi.get("lastPrice") if hasattr(fi, "get") else None
+        return round(float(px), 2) if px and float(px) > 0 else None
+    except Exception:
+        return None
+
+
 def _compute_dma_for_symbols(symbol_map):
     """
     Core DMA/EMA computation.
@@ -167,6 +183,32 @@ def _compute_dma_for_symbols(symbol_map):
     except Exception as e:
         return {"error": str(e)}
 
+    # Latest session Yahoo knows about — the raw index max. Yahoo keeps the
+    # session row even when a ticker's close for it is NaN (a common NSE feed
+    # gap), so a ticker whose last VALID bar predates this is showing a stale
+    # price we must repair with a live quote.
+    try:
+        batch_latest = close_df.index.max()
+    except Exception:
+        batch_latest = None
+
+    # Pre-fetch live prices for stale tickers in parallel (fast_info is one
+    # light call each; doing 50+ sequentially would add ~40s to a refresh).
+    live_prices = {}
+    if batch_latest is not None:
+        stale_syms = []
+        for s in yahoo_symbols:
+            if s in close_df.columns:
+                v = close_df[s].dropna()
+                if len(v) and v.index[-1] < batch_latest:
+                    stale_syms.append(s)
+        if stale_syms:
+            from concurrent.futures import ThreadPoolExecutor
+            with ThreadPoolExecutor(max_workers=10) as ex:
+                for s, px in zip(stale_syms, ex.map(_live_price, stale_syms)):
+                    if px is not None:
+                        live_prices[s] = px
+
     result = {}
     for yahoo_sym in yahoo_symbols:
         key = symbol_map[yahoo_sym]
@@ -177,6 +219,13 @@ def _compute_dma_for_symbols(symbol_map):
 
             cmp        = round(float(series.iloc[-1]), 2)
             prev_close = round(float(series.iloc[-2]), 2)
+
+            # Repair a stale CMP with the pre-fetched live quote so the
+            # displayed price is real, not a several-day-old close.
+            stale = False
+            if yahoo_sym in live_prices:
+                cmp = live_prices[yahoo_sym]
+                stale = True   # CMP is a live quote; history/MA bars lag by ≥1 day
 
             ema_series = series.ewm(span=20, adjust=False).mean()
             ema20      = round(float(ema_series.iloc[-1]), 2)
@@ -244,13 +293,14 @@ def _compute_dma_for_symbols(symbol_map):
                 "cross":        ", ".join(crosses) if crosses else "—",
                 "signal":       _signal(cmp, ema20, dma50, dma200, dma200_slope, ema_dist_pct),
                 "stop":         dma50,
+                "stale":        stale,
             }
         except Exception:
             result[key] = {
                 "cmp": None, "ema20": None, "dma50": None, "dma200": None,
                 "dma200_slope": None, "ema_dist_pct": None, "rsi14": None,
                 "vol_ratio": None, "off_high_pct": None,
-                "cross": "—", "signal": "—", "stop": None,
+                "cross": "—", "signal": "—", "stop": None, "stale": False,
             }
     return result
 
@@ -1981,8 +2031,18 @@ function buildDmaRows(data) {
         cross:         d.cross         ?? '—',
         signal:        d.signal        ?? '—',
         stop:          d.stop          ?? null,
+        stale:         d.stale         ?? false,
       };
     });
+}
+
+// CMP cell with a subtle "live" tag when the price is a live quote patched in
+// because Yahoo's daily history is lagging (moving averages use the prior close).
+function fmtCmp(v, stale) {
+  if (v == null) return fmt(v);
+  return fmt(v) + (stale
+    ? ' <span title="Live price — the Yahoo daily close is lagging, so the moving averages use the prior session" style="color:#e67e22;font-size:.62rem;vertical-align:super;font-weight:600">live</span>'
+    : '');
 }
 
 function dmaClass(cmp, ma) {
@@ -2070,7 +2130,7 @@ function renderDmaTable(rows) {
   tbody.innerHTML = rows.map(r => `
     <tr data-broker="${r.broker}">
       <td class="fw-bold">${r.stock}</td>
-      <td class="r">${fmt(r.cmp)}</td>
+      <td class="r">${fmtCmp(r.cmp, r.stale)}</td>
       <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.ema20)}">${fmt(r.ema20)}</td>
       <td class="r d-none d-md-table-cell">${distHtml(r.ema_dist_pct)}</td>
       <td class="r">${rsiHtml(r.rsi14)}</td>
@@ -2195,7 +2255,7 @@ function renderScannerRows(rows, emptyMsg) {
   tbody.innerHTML = rows.map(r => `
     <tr>
       <td class="fw-bold">${r.stock}</td>
-      <td class="r">${fmt(r.cmp)}</td>
+      <td class="r">${fmtCmp(r.cmp, r.stale)}</td>
       <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.ema20)}">${fmt(r.ema20)}</td>
       <td class="r d-none d-md-table-cell">${distHtml(r.ema_dist_pct)}</td>
       <td class="r">${rsiHtml(r.rsi14)}</td>
@@ -2484,7 +2544,7 @@ function renderExitRows(rows, emptyMsg) {
     return `
     <tr>
       <td class="fw-bold">${r.stock}</td>
-      <td class="r">${fmt(d.cmp)}</td>
+      <td class="r">${fmtCmp(d.cmp, d.stale)}</td>
       <td class="r ${pnlCls}">${pnlTxt}</td>
       <td class="r d-none d-md-table-cell">${rsiHtml(d.rsi14)}</td>
       <td class="r d-none d-md-table-cell">${volHtml(d.vol_ratio)}</td>
@@ -2580,6 +2640,7 @@ function buildWlRows(data, symbols) {
       ema_dist_pct: d.ema_dist_pct ?? null,
       rsi14:        d.rsi14        ?? null,
       vol_ratio:    d.vol_ratio    ?? null,
+      stale:        d.stale        ?? false,
       dma50:        d.dma50        ?? null,
       dma200:       d.dma200       ?? null,
       dma200_slope: d.dma200_slope ?? null,
@@ -2601,7 +2662,7 @@ function renderWlRows(rows) {
     return `
     <tr>
       <td class="fw-bold">${name}<br><span style="font-size:.7rem;color:#888;font-weight:400">${r.symbol}</span></td>
-      <td class="r">${fmt(r.cmp)}</td>
+      <td class="r">${fmtCmp(r.cmp, r.stale)}</td>
       <td class="r d-none d-md-table-cell ${dmaClass(r.cmp, r.ema20)}">${fmt(r.ema20)}</td>
       <td class="r d-none d-md-table-cell">${distHtml(r.ema_dist_pct)}</td>
       <td class="r">${rsiHtml(r.rsi14)}</td>
